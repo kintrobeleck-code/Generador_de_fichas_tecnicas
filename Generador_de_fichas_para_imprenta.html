@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Orden de Trabajo</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial Narrow', Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 40px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* EL BOTÓN FLOTANTE CON EL TEXTO PERFECTAMENTE CENTRADO */
+    .btn-clear-floating {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      background-color: #1a365d; 
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 0;
+      height: 45px;
+      width: 45px;
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      transition: width 0.35s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.3s ease;
+      z-index: 2000;
+      white-space: nowrap;
+    }
+
+    .btn-clear-floating:hover {
+      width: 170px; 
+      background-color: #c53030; 
+    }
+
+    .btn-clear-icon-wrapper {
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .btn-clear-icon {
+      font-size: 18px;
+      user-select: none;
+    }
+
+    /* Ajuste de flexbox para centrado absoluto en el área expandida */
+    .btn-clear-text {
+      font-size: 14px;
+      font-weight: bold;
+      text-transform: uppercase;
+      opacity: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: calc(100% - 45px); /* Toma exactamente el espacio restante */
+      padding-right: 18px; 
+      transition: opacity 0.25s ease;
+    }
+
+    .btn-clear-floating:hover .btn-clear-text {
+      opacity: 1;
+    }
+
+    .container {
+      background: #ffffff;
+      padding: 20px 40px 40px 40px;
+      width: 100%;
+      max-width: 650px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    h2, h3 {
+      text-align: center;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    h2 {
+      font-size: 24px;
+      margin-top: 10px;
+      margin-bottom: 25px;
+      color: #000000;
+      transition: color 0.2s;
+    }
+
+    h3.section-title {
+      font-size: 16px;
+      text-align: left;
+      border-bottom: 2px solid #000000;
+      padding-bottom: 4px;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      color: #000000;
+    }
+
+    .row {
+      display: flex;
+      align-items: flex-end;
+      border-bottom: 1.5px solid #666666;
+      padding: 6px 0;
+      margin-bottom: 4px;
+    }
+
+    .row-label {
+      width: 45%;
+      font-weight: bold;
+      font-size: 16px;
+      text-align: right;
+      padding-right: 20px;
+      color: #000000;
+    }
+
+    .row-value {
+      width: 55%;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-family: 'Arial Narrow', Arial, sans-serif;
+      font-size: 16px;
+      color: #333333;
+      padding: 2px 0;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+    }
+
+    ::placeholder {
+      color: #b0b0b0;
+      opacity: 1;
+    }
+
+    .pieza-block {
+      background-color: #fcfcfc;
+      border: 1px solid #b0b0b0;
+      padding: 20px;
+      margin-bottom: 25px;
+      position: relative;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+
+    .pieza-block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #ff4081;
+      padding-bottom: 4px;
+    }
+
+    .pieza-title {
+      font-weight: bold;
+      font-size: 16px;
+      color: #ff4081;
+      text-transform: uppercase;
+    }
+
+    .btn-remove-pieza {
+      background: #e53e3e;
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .btn-remove-pieza:hover {
+      background: #c53030;
+    }
+
+    .btn-add-container {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0 30px 0;
+    }
+
+    .btn-add {
+      background-color: #4a5568;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .btn-add:hover {
+      background-color: #2d3748;
+    }
+
+    .dimension-container {
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .dim-input {
+      width: 70px !important;
+      text-align: center;
+    }
+
+    .dim-separator {
+      padding: 0 6px;
+      color: #666666;
+      font-size: 14px;
+      user-select: none;
+    }
+
+    select.custom-select {
+      border: none;
+      background: transparent;
+      font-family: 'Arial Narrow', Arial, sans-serif;
+      font-size: 15px;
+      color: #333333;
+      width: 100%;
+      cursor: pointer;
+    }
+    select.custom-select:focus { outline: none; }
+
+    select.dim-select {
+      width: auto;
+      margin-left: auto;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 15px;
+      color: #333333;
+      cursor: pointer;
+    }
+
+    .row.textarea-row { align-items: flex-start; }
+
+    .btn-container {
+      display: flex;
+      gap: 15px;
+      margin-top: 35px;
+      width: 100%;
+      max-width: 620px;
+    }
+
+    .btn-action {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 4px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #ffffff;
+      text-transform: uppercase;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .btn-format { background-color: #4a5568; }
+    .btn-wa { background-color: #25d366; }
+    button:hover { opacity: 0.9; }
+
+    .toast {
+      position: fixed;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <button class="btn-clear-floating" onclick="eliminarTodosLosDatos()" title="Eliminar datos">
+    <div class="btn-clear-icon-wrapper">
+      <span class="btn-clear-icon">🗑️</span>
+    </div>
+    <span class="btn-clear-text">eliminar datos</span>
+  </button>
+
+  <div class="container">
+    <h2 id="main-title">Orden</h2>
+    
+    <h3 class="section-title">Datos del cliente</h3>
+    
+    <div class="row">
+      <div class="row-label">Nombre del cliente</div>
+      <div class="row-value">
+        <input type="text" id="cliente" placeholder="Juanito" oninput="actualizarTituloDinamico()">
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="row-label">Correo del que se envía</div>
+      <div class="row-value"><input type="email" id="correo" placeholder="juanitoperez@gmail.com"></div>
+    </div>
+
+    <div class="row">
+      <div class="row-label">Teléfono</div>
+      <div class="row-value">
+        <input type="text" id="telefono" placeholder="1234 5678" oninput="formatearTelefono(this)">
+      </div>
+    </div>
+
+    <h3 class="section-title">Especificaciones por Pieza</h3>
+    <div id="piezas-contenedor"></div>
+
+    <div class="btn-add-container">
+      <button type="button" class="btn-add" onclick="agregarNuevoBloquePieza()">＋ Agregar otra pieza</button>
+    </div>
+
+    <h3 class="section-title">Facturación y Entrega</h3>
+
+    <div class="row">
+      <div class="row-label">Monto total</div>
+      <div class="row-value">
+        <input type="text" id="monto-total" placeholder="Q 0.00" readonly style="font-weight: bold; color: #000;">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="row-label">Nit</div>
+      <div class="row-value"><input type="text" id="nit" placeholder="CF"></div>
+    </div>
+
+    <div class="row">
+      <div class="row-label">Fecha de entrega</div>
+      <div class="row-value"><input type="text" id="fecha" placeholder="X / X / 2026"></div>
+    </div>
+
+    <div class="row">
+      <div class="row-label">Hora de entrega</div>
+      <div class="row-value"><input type="text" id="hora" placeholder="10:00AM"></div>
+    </div>
+
+    <div class="row textarea-row">
+      <div class="row-label">Observaciones generales</div>
+      <div class="row-value"><textarea id="observaciones-generales" rows="2" placeholder="Indicaciones globales de la entrega..."></textarea></div>
+    </div>
+
+  </div>
+
+  <div class="btn-container">
+    <button class="btn-action btn-format" onclick="copiarConFormato()">Copiar con formatos</button>
+    <button class="btn-action btn-wa" onclick="copiarParaWhatsApp()">Copiar para WhatsApp</button>
+  </div>
+
+  <div id="toast" class="toast">¡Copiado con éxito!</div>
+
+  <script>
+    let seedIdPieza = 0;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      agregarNuevoBloquePieza();
+    });
+
+    function actualizarTituloDinamico() {
+      const nombreInput = document.getElementById('cliente').value.trim();
+      const tituloH2 = document.getElementById('main-title');
+      if (nombreInput) {
+        tituloH2.innerText = `Orden de ${nombreInput}`;
+      } else {
+        tituloH2.innerText = "Orden";
+      }
+    }
+
+    function formatearTelefono(input) {
+      let digitos = input.value.replace(/\D/g, '');
+      let formateado = digitos.match(/.{1,4}/g);
+      input.value = formateado ? formateado.join(' ') : '';
+    }
+
+    function agregarNuevoBloquePieza() {
+      seedIdPieza++;
+      const contenedor = document.getElementById('piezas-contenedor');
+      
+      const div = document.createElement('div');
+      div.className = 'pieza-block';
+      div.id = `block-pieza-${seedIdPieza}`;
+      
+      div.innerHTML = `
+        <div class="pieza-block-header">
+          <span class="pieza-title">Pieza</span>
+          <button type="button" class="btn-remove-pieza" onclick="removerBloquePieza(${seedIdPieza})">Eliminar</button>
+        </div>
+        
+        <div class="row">
+          <div class="row-label">Tipo de pieza</div>
+          <div class="row-value"><input type="text" class="p-tipo" placeholder="Tarjetas de presentación"></div>
+        </div>
+        
+        <div class="row">
+          <div class="row-label">Dimensiones del arte</div>
+          <div class="row-value">
+            <div class="dimension-container">
+              <input type="text" class="p-ancho" placeholder="X ancho">
+              <span class="dim-separator">×</span>
+              <input type="text" class="p-alto" placeholder="Y alto">
+              <span class="dim-separator">/</span>
+              <select class="custom-select dim-select p-unidad">
+                <option value="In" selected>In</option>
+                <option value="cm">cm</option>
+                <option value="mm">mm</option>
+                <option value="m">m</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="row">
+          <div class="row-label">Nombre del archivo</div>
+          <div class="row-value"><input type="text" class="p-archivo" placeholder="Tarjetas_chileras.pdf"></div>
+        </div>
+        
+        <div class="row">
+          <div class="row-label">Software utilizado</div>
+          <div class="row-value"><input type="text" class="p-software" placeholder="Canva"></div>
+        </div>
+        
+        <div class="row">
+          <div class="row-label">Papel o material de soporte</div>
+          <div class="row-value"><input type="text" class="p-soporte" placeholder="Bond / Husky / Texcote / etc"></div>
+        </div>
+
+        <div class="row">
+          <div class="row-label">Nivel de diseño</div>
+          <div class="row-value">
+            <select class="custom-select p-diseno" onchange="calcularMontoTotalGlobal()">
+              <option value="0" data-nombre="Ninguno">No requiere diseño adicional (Q 0)</option>
+              <option value="25" data-nombre="DISEÑO STICKERS DE CUADERNOS O MONTAJES">DISEÑO STICKERS DE CUADERNOS O MONTAJES — Q 25</option>
+              <option value="50" data-nombre="DISEÑO NIVEL 1">DISEÑO NIVEL 1 — Q 50</option>
+              <option value="75" data-nombre="DISEÑO NIVEL 2">DISEÑO NIVEL 2 — Q 75</option>
+              <option value="200" data-nombre="DISEÑO NIVEL 3">DISEÑO NIVEL 3 — Q 200</option>
+              <option value="150" data-nombre="DISEÑO TARJETAS DE PRESENTACIÓN">DISEÑO TARJETAS DE PRESENTACIÓN — Q 150 (por lado)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-label">Sistema de reproducción sugerido</div>
+          <div class="row-value"><input type="text" class="p-reproduccion" placeholder="Acrobat"></div>
+        </div>
+
+        <div class="row" style="align-items: flex-start; padding: 6px 0;">
+          <div class="row-label">Modo de color</div>
+          <div class="row-value">
+            <div class="color-grid">
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="Color T" checked> Color T</label>
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="Color T/R"> Color T/R</label>
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="B/N T"> B/N T</label>
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="B/N T/R"> B/N T/R</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-label">Procesos post impresión</div>
+          <div class="row-value">
+            <input type="text" class="p-post-redaccion" placeholder="Corte, semicorte, laminado, barniz, etc.">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-label">Precio unitario por arte</div>
+          <div class="row-value">
+            <input type="text" class="p-precio" placeholder="Q 25.00" 
+                   onfocus="limpiarMascaraPrecio(this)" 
+                   onblur="aplicarMascaraPrecio(this)" 
+                   oninput="calcularMontoTotalGlobal()">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-label">Cantidad de artes</div>
+          <div class="row-value"><input type="number" class="p-cantidad" placeholder="2" oninput="calcularMontoTotalGlobal()"></div>
+        </div>
+
+        <div class="row textarea-row">
+          <div class="row-label">Notas de la pieza</div>
+          <div class="row-value"><textarea class="p-notas" rows="2" placeholder="Me gustaría que fuera como..."></textarea></div>
+        </div>
+      `;
+      contenedor.appendChild(div);
+      reordenarNumeracionVisual();
+      calcularMontoTotalGlobal();
+    }
+
+    function removerBloquePieza(id) {
+      const bloques = document.querySelectorAll('.pieza-block');
+      if (bloques.length > 1) {
+        const bloque = document.getElementById(`block-pieza-${id}`);
+        if (bloque) {
+          bloque.remove();
+          reordenarNumeracionVisual();
+          calcularMontoTotalGlobal();
+        }
+      }
+    }
+
+    function reordenarNumeracionVisual() {
+      const bloques = document.querySelectorAll('.pieza-block');
+      const blocks_len = bloques.length;
+      bloques.forEach((bloque, index) => {
+        const titulo = bloque.querySelector('.pieza-title');
+        if (titulo) titulo.innerText = `Pieza #${index + 1}`;
+        
+        const btnEliminar = bloque.querySelector('.btn-remove-pieza');
+        if (btnEliminar) {
+          btnEliminar.style.display = blocks_len === 1 ? 'none' : 'inline-block';
+        }
+      });
+    }
+
+    function limpiarMascaraPrecio(input) {
+      let valor = input.value.replace(/[^\d.]/g, '');
+      input.value = valor ? parseFloat(valor) : '';
+    }
+
+    function aplicarMascaraPrecio(input) {
+      let valor = parseFloat(input.value);
+      if (!isNaN(valor)) {
+        input.value = `Q ${valor.toFixed(2)}`;
+      } else {
+        input.value = '';
+      }
+    }
+
+    function calcularMontoTotalGlobal() {
+      let sumaTotal = 0;
+      const bloques = document.querySelectorAll('.pieza-block');
+      
+      bloques.forEach(bloque => {
+        const precioRaw = bloque.querySelector('.p-precio').value.replace(/[^\d.]/g, '');
+        const precioUnitario = parseFloat(precioRaw) || 0;
+        const cantidad = parseInt(bloque.querySelector('.p-cantidad').value) || 1;
+        const costoDiseno = parseFloat(bloque.querySelector('.p-diseno').value) || 0;
+        
+        sumaTotal += (precioUnitario * cantidad) + costoDiseno;
+      });
+      
+      document.getElementById('monto-total').value = `Q ${sumaTotal.toFixed(2)}`;
+    }
+
+    function eliminarTodosLosDatos() {
+      if (confirm("¿Estás seguro de que deseas eliminar todos los datos ingresados en la orden?")) {
+        document.getElementById('cliente').value = '';
+        document.getElementById('correo').value = '';
+        document.getElementById('telefono').value = '';
+        actualizarTituloDinamico();
+
+        document.getElementById('nit').value = '';
+        document.getElementById('fecha').value = '';
+        document.getElementById('hora').value = '';
+        document.getElementById('observaciones-generales').value = '';
+
+        const contenedor = document.getElementById('piezas-contenedor');
+        contenedor.innerHTML = ''; 
+        seedIdPieza = 0;           
+        agregarNuevoBloquePieza(); 
+
+        mostrarToast("¡Todos los datos han sido eliminados!");
+      }
+    }
+
+    function extraerEstructuraCompleta() {
+      const cliente = document.getElementById('cliente').value.trim() || 'Sin especificar';
+      const correo = document.getElementById('correo').value.trim() || 'sin especificar';
+      const telefono = document.getElementById('telefono').value.trim() || 'sin especificar';
+
+      let listaPiezas = [];
+      const bloques = document.querySelectorAll('.pieza-block');
+      bloques.forEach((bloque, index) => {
+        const tipo = block_el = bloque.querySelector('.p-tipo').value.trim() || 'Sin especificar';
+        
+        const anchoVal = bloque.querySelector('.p-ancho').value.trim();
+        const altoVal = bloque.querySelector('.p-alto').value.trim();
+        const unidad = bloque.querySelector('.p-unidad').value;
+        
+        let dimensiones = 'sin especificar';
+        if (anchoVal || altoVal) {
+          dimensiones = `${anchoVal || 'sin especificar'} ⨯ ${altoVal || 'sin especificar'} ${unidad}`;
+        }
+
+        const archivo = bloque.querySelector('.p-archivo').value.trim() || 'sin especificar';
+        const software = bloque.querySelector('.p-software').value.trim() || 'sin especificar';
+        const soporte = bloque.querySelector('.p-soporte').value.trim() || 'sin especificar';
+        const reproduccion = bloque.querySelector('.p-reproduccion').value.trim() || 'sin especificar';
+        
+        const blockId = bloque.id.replace('block-pieza-', '');
+        const colorOpt = bloque.querySelector(`input[name="color_${blockId}"]:checked`);
+        const color = colorOpt ? colorOpt.value : 'Color T';
+
+        const postImpresionVal = bloque.querySelector('.p-post-redaccion').value.trim() || 'sin especificar';
+
+        const precioRaw = bloque.querySelector('.p-precio').value.replace(/[^\d.]/g, '');
+        const precioVal = precioRaw ? `Q ${parseFloat(precioRaw).toFixed(2)}` : 'sin especificar';
+        
+        const cantidadRaw = bloque.querySelector('.p-cantidad').value;
+        const cantidadVal = cantidadRaw ? `${parseInt(cantidadRaw)} artes` : 'sin especificar';
+
+        const notas = bloque.querySelector('.p-notas').value.trim();
+
+        listaPiezas.push({
+          num: index + 1,
+          tipo,
+          dimensiones,
+          archivo,
+          software,
+          soporte,
+          reproduccion,
+          color,
+          postImpresion: postImpresionVal,
+          precio: precioVal,
+          cantidad: cantidadVal,
+          notas
+        });
+      });
+
+      return {
+        cliente, correo, telefono,
+        piezas: listaPiezas,
+        montoTotal: document.getElementById('monto-total').value || 'Q 0.00',
+        nit: document.getElementById('nit').value.trim() || 'sin especificar',
+        fecha: document.getElementById('fecha').value.trim() || 'sin especificar',
+        hora: document.getElementById('hora').value.trim() || 'sin especificar',
+        observacionesGenerales: document.getElementById('observaciones-generales').value.trim()
+      };
+    }
+
+    async function copiarConFormato() {
+      const d = extraerEstructuraCompleta();
+      let piezasHTML = '';
+      d.piezas.forEach(p => {
+        let notasHTML = p.notas ? `<p style="margin: 2px 0; padding-left: 10px; color:#666; font-size: medium;"><strong>Notas de la pieza:</strong> <em>${p.notas}</em></p>` : '';
+        
+        piezasHTML += `
+          <div style="margin-top: 15px; padding: 12px; border-left: 3px solid #ff4081; background-color: #fafafa; font-size: medium;">
+            <p style="margin: 2px 0; color: #ff4081; font-size: large;"><strong>— Pieza #${p.num}: ${p.tipo}</strong></p>
+            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Dimensiones del arte:</strong> ${p.dimensiones}</p>
+            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Nombre del archivo:</strong> ${p.archivo}</p>
+            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Software utilizado:</strong> ${p.software}</p>
+            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Papel / Soporte:</strong> ${p.soporte}</p>
+            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Sistema de reproducción:</strong> ${p.reproduccion}</p>
+            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Modo de color:</strong> ${p.color}</p>
+            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Procesos post impresión:</strong> ${p.postImpresion}</p>
+            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Precio unitario por arte:</strong> ${p.precio} | <strong>Cantidad de artes:</strong> ${p.cantidad}</p>
+            ${notasHTML}
+          </div>
+        `;
+      });
+
+      let obsGeneralesHTML = d.observacionesGenerales ? `<p style="margin: 4px 0; font-size: medium;"><strong>Observaciones generales:</strong> <em>${d.observacionesGenerales}</em></p>` : '';
+
+      const htmlString = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; font-size: medium;">
+          <h3 style="color: #ff4081; margin-top: 0; margin-bottom: 16px; font-size: large;"><strong>Orden de ${d.cliente}</strong></h3>
+          <p style="margin: 4px 0; font-size: medium;"><strong>Correo del que se envía:</strong> ${d.correo}</p>
+          <p style="margin: 4px 0; font-size: medium;"><strong>Teléfono:</strong> ${d.telefono}</p>
+          
+          <h4 style="margin-top: 25px; margin-bottom: 10px; color: #000; border-bottom: 2px solid #ccc; padding-bottom: 4px; text-transform: uppercase; font-size: large;">Especificaciones por Pieza</h4>
+          ${piezasHTML}
+          
+          <h4 style="margin-top: 25px; margin-bottom: 10px; color: #000; border-bottom: 2px solid #ccc; padding-bottom: 4px; text-transform: uppercase; font-size: large;">Datos de Entrega</h4>
+          <p style="margin: 4px 0; font-size: medium;"><strong>Monto total de orden:</strong> <span style="color:#ff4081;"><strong>${d.montoTotal}</strong></span></p>
+          <p style="margin: 4px 0; font-size: medium;"><strong>Nit:</strong> ${d.nit}</p>
+          <p style="margin: 4px 0; font-size: medium;"><strong>Fecha de entrega:</strong> ${d.fecha}</p>
+          <p style="margin: 4px 0; font-size: medium;"><strong>Hora de entrega:</strong> ${d.hora}</p>
+          ${obsGeneralesHTML}
+        </div>
+      `;
+
+      try {
+        const blobHTML = new Blob([htmlString], { type: "text/html" });
+        const blobText = new Blob([htmlString.replace(/<[^>]*>/g, '')], { type: "text/plain" });
+        const dataItem = new ClipboardItem({ "text/html": blobHTML, "text/plain": blobText });
+        await navigator.clipboard.write([dataItem]);
+        mostrarToast("¡Orden copiada para Gmail!");
+      } catch (err) {
+        console.error(err);
+        mostrarToast("Error al copiar");
+      }
+    }
+
+    async function copiarParaWhatsApp() {
+      const d = extraerEstructuraCompleta();
+      let piezasWA = '';
+      d.piezas.forEach(p => {
+        let notaLineaWA = p.notas ? `   • *Notas de la pieza:* _${p.notas}_\n` : '';
+
+        piezasWA += `\n*${p.num}. ${p.tipo}*\n` +
+                    `   • *Dimensiones del arte:* ${p.dimensiones}\n` +
+                    `   • *Nombre del archivo:* ${p.archivo}\n` +
+                    `   • *Software:* ${p.software}\n` +
+                    `   • *Soporte:* ${p.soporte}\n` +
+                    `   • *Reproducción:* ${p.reproduccion}\n` +
+                    `   • *Color:* ${p.color}\n` +
+                    `   • *Post impresión:* ${p.postImpresion}\n` +
+                    `   • *Precio por arte:* ${p.precio} x ${p.cantidad}\n` +
+                    `${notaLineaWA}`;
+      });
+
+      let obsGeneralesWA = d.observacionesGenerales ? `\n*Observaciones generales:* ${d.observacionesGenerales}` : '';
+
+      const textoWhatsApp = `> *_Orden de ${d.cliente}_*\n\n` +
+        `*Correo del que se envía:* ${d.correo}\n` +
+        `*Teléfono:* ${d.telefono}\n\n` +
+        `--- *ESPECIFICACIONES POR PIEZA* ---\n` +
+        `${piezasWA}\n` +
+        `*--- DATOS DE ENTREGA ---*\n\n` +
+        `*Monto total:* ${d.montoTotal}\n` +
+        `*Nit:* ${d.nit}\n` +
+        `*Fecha de entrega:* ${d.fecha}\n` +
+        `*Hora de entrega:* ${d.hora}${obsGeneralesWA}`;
+
+      try {
+        await navigator.clipboard.writeText(textoWhatsApp);
+        mostrarToast("¡Copiado para WhatsApp!");
+      } catch (err) {
+        console.error(err);
+        mostrarToast("Error al copiar");
+      }
+    }
+
+    function mostrarToast(mensaje) {
+      const toast = document.getElementById("toast");
+      toast.innerText = mensaje;
+      toast.classList.add("show");
+      setTimeout(() => { toast.classList.remove("show"); }, 2500);
+    }
+  </script>
+</body>
+</html>
