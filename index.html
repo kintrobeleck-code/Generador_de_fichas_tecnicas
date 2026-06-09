@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Generador de Orden de Trabajo</title>
-  
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%22 y=%2257%22 font-size=%2280%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>📋</text></svg>">
 
   <style>
@@ -335,19 +334,19 @@
     <div class="row">
       <div class="row-label">Nombre del cliente</div>
       <div class="row-value">
-        <input type="text" id="cliente" placeholder="Juanito" oninput="actualizarTituloDinamico()">
+        <input type="text" id="cliente" placeholder="Juanito" oninput="actualizarTituloDinamico(); guardarDatosEnCache();">
       </div>
     </div>
     
     <div class="row">
       <div class="row-label">Correo del que se envía</div>
-      <div class="row-value"><input type="email" id="correo" placeholder="juanitoperez@gmail.com"></div>
+      <div class="row-value"><input type="email" id="correo" placeholder="juanitoperez@gmail.com" oninput="guardarDatosEnCache();"></div>
     </div>
 
     <div class="row">
       <div class="row-label">Teléfono</div>
       <div class="row-value">
-        <input type="text" id="telefono" placeholder="1234 5678" oninput="formatearTelefono(this)">
+        <input type="text" id="telefono" placeholder="1234 5678" oninput="formatearTelefono(this); guardarDatosEnCache();">
       </div>
     </div>
 
@@ -355,7 +354,7 @@
     <div id="piezas-contenedor"></div>
 
     <div class="btn-add-container">
-      <button type="button" class="btn-add" onclick="agregarNuevoBloquePieza()">＋ Agregar otra pieza</button>
+      <button type="button" class="btn-add" onclick="agregarNuevoBloquePieza(); guardarDatosEnCache();">＋ Agregar otra pieza</button>
     </div>
 
     <h3 class="section-title">Facturación y Entrega</h3>
@@ -369,22 +368,22 @@
 
     <div class="row">
       <div class="row-label">Nit</div>
-      <div class="row-value"><input type="text" id="nit" placeholder="CF"></div>
+      <div class="row-value"><input type="text" id="nit" placeholder="CF" oninput="guardarDatosEnCache();"></div>
     </div>
 
     <div class="row">
       <div class="row-label">Fecha de entrega</div>
-      <div class="row-value"><input type="text" id="fecha" placeholder="X / X / 2026"></div>
+      <div class="row-value"><input type="text" id="fecha" placeholder="X / X / 2026" oninput="guardarDatosEnCache();"></div>
     </div>
 
     <div class="row">
       <div class="row-label">Hora de entrega</div>
-      <div class="row-value"><input type="text" id="hora" placeholder="10:00AM"></div>
+      <div class="row-value"><input type="text" id="hora" placeholder="10:00AM" oninput="guardarDatosEnCache();"></div>
     </div>
 
     <div class="row textarea-row">
       <div class="row-label">Observaciones generales</div>
-      <div class="row-value"><textarea id="observaciones-generales" rows="2" placeholder="Indicaciones globales de la entrega..."></textarea></div>
+      <div class="row-value"><textarea id="observaciones-generales" rows="2" placeholder="Indicaciones globales de la entrega..." oninput="guardarDatosEnCache();"></textarea></div>
     </div>
 
   </div>
@@ -399,8 +398,13 @@
   <script>
     let seedIdPieza = 0;
 
+    // EVENTO RECONSTRUCTOR AL CARGAR LA PÁGINA
     document.addEventListener("DOMContentLoaded", () => {
-      agregarNuevoBloquePieza();
+      if (localStorage.getItem("orden_cache_guardado") === "true") {
+        cargarDatosDesdeCache();
+      } else {
+        agregarNuevoBloquePieza();
+      }
     });
 
     function actualizarTituloDinamico() {
@@ -430,23 +434,23 @@
       div.innerHTML = `
         <div class="pieza-block-header">
           <span class="pieza-title">Pieza</span>
-          <button type="button" class="btn-remove-pieza" onclick="removerBloquePieza(${seedIdPieza})">Eliminar</button>
+          <button type="button" class="btn-remove-pieza" onclick="removerBloquePieza(${seedIdPieza}); guardarDatosEnCache();">Eliminar</button>
         </div>
         
         <div class="row">
           <div class="row-label">Tipo de pieza</div>
-          <div class="row-value"><input type="text" class="p-tipo" placeholder="Tarjetas de presentación"></div>
+          <div class="row-value"><input type="text" class="p-tipo" placeholder="Tarjetas de presentación" oninput="guardarDatosEnCache();"></div>
         </div>
         
         <div class="row">
           <div class="row-label">Dimensiones del arte</div>
           <div class="row-value">
             <div class="dimension-container">
-              <input type="text" class="p-ancho" placeholder="X ancho">
+              <input type="text" class="p-ancho" placeholder="X ancho" oninput="guardarDatosEnCache();">
               <span class="dim-separator">×</span>
-              <input type="text" class="p-alto" placeholder="Y alto">
+              <input type="text" class="p-alto" placeholder="Y alto" oninput="guardarDatosEnCache();">
               <span class="dim-separator">/</span>
-              <select class="custom-select dim-select p-unidad">
+              <select class="custom-select dim-select p-unidad" onchange="guardarDatosEnCache();">
                 <option value="In" selected>In</option>
                 <option value="cm">cm</option>
                 <option value="mm">mm</option>
@@ -458,23 +462,23 @@
         
         <div class="row">
           <div class="row-label">Nombre del archivo</div>
-          <div class="row-value"><input type="text" class="p-archivo" placeholder="Tarjetas_chileras.pdf"></div>
+          <div class="row-value"><input type="text" class="p-archivo" placeholder="Tarjetas_chileras.pdf" oninput="guardarDatosEnCache();"></div>
         </div>
         
         <div class="row">
           <div class="row-label">Software utilizado</div>
-          <div class="row-value"><input type="text" class="p-software" placeholder="Canva"></div>
+          <div class="row-value"><input type="text" class="p-software" placeholder="Canva" oninput="guardarDatosEnCache();"></div>
         </div>
         
         <div class="row">
           <div class="row-label">Papel o material de soporte</div>
-          <div class="row-value"><input type="text" class="p-soporte" placeholder="Bond / Husky / Texcote / etc"></div>
+          <div class="row-value"><input type="text" class="p-soporte" placeholder="Bond / Husky / Texcote / etc" oninput="guardarDatosEnCache();"></div>
         </div>
 
         <div class="row">
           <div class="row-label">Nivel de diseño</div>
           <div class="row-value">
-            <select class="custom-select p-diseno" onchange="calcularMontoTotalGlobal()">
+            <select class="custom-select p-diseno" onchange="calcularMontoTotalGlobal(); guardarDatosEnCache();">
               <option value="0" data-nombre="Ninguno">No requiere diseño adicional (Q 0)</option>
               <option value="25" data-nombre="DISEÑO STICKERS DE CUADERNOS O MONTAJES">DISEÑO STICKERS DE CUADERNOS O MONTAJES — Q 25</option>
               <option value="50" data-nombre="DISEÑO NIVEL 1">DISEÑO NIVEL 1 — Q 50</option>
@@ -487,17 +491,17 @@
 
         <div class="row">
           <div class="row-label">Sistema de reproducción sugerido</div>
-          <div class="row-value"><input type="text" class="p-reproduccion" placeholder="Acrobat"></div>
+          <div class="row-value"><input type="text" class="p-reproduccion" placeholder="Acrobat" oninput="guardarDatosEnCache();"></div>
         </div>
 
         <div class="row" style="align-items: flex-start; padding: 6px 0;">
           <div class="row-label">Modo de color</div>
           <div class="row-value">
             <div class="color-grid">
-              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="Color T" checked> Color T</label>
-              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="Color T/R"> Color T/R</label>
-              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="B/N T"> B/N T</label>
-              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="B/N T/R"> B/N T/R</label>
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="Color T" checked onclick="guardarDatosEnCache();"> Color T</label>
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="Color T/R" onclick="guardarDatosEnCache();"> Color T/R</label>
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="B/N T" onclick="guardarDatosEnCache();"> B/N T</label>
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="B/N T/R" onclick="guardarDatosEnCache();"> B/N T/R</label>
             </div>
           </div>
         </div>
@@ -505,7 +509,7 @@
         <div class="row">
           <div class="row-label">Procesos post impresión</div>
           <div class="row-value">
-            <input type="text" class="p-post-redaccion" placeholder="Corte, semicorte, laminado, barniz, etc.">
+            <input type="text" class="p-post-redaccion" placeholder="Corte, semicorte, laminado, barniz, etc." oninput="guardarDatosEnCache();">
           </div>
         </div>
 
@@ -514,19 +518,19 @@
           <div class="row-value">
             <input type="text" class="p-precio" placeholder="Q 25.00" 
                    onfocus="limpiarMascaraPrecio(this)" 
-                   onblur="aplicarMascaraPrecio(this)" 
+                   onblur="aplicarMascaraPrecio(this); guardarDatosEnCache();" 
                    oninput="calcularMontoTotalGlobal()">
           </div>
         </div>
 
         <div class="row">
           <div class="row-label">Cantidad de artes</div>
-          <div class="row-value"><input type="number" class="p-cantidad" placeholder="2" oninput="calcularMontoTotalGlobal()"></div>
+          <div class="row-value"><input type="number" class="p-cantidad" placeholder="2" oninput="calcularMontoTotalGlobal(); guardarDatosEnCache();"></div>
         </div>
 
         <div class="row textarea-row">
           <div class="row-label">Notas de la pieza</div>
-          <div class="row-value"><textarea class="p-notas" rows="2" placeholder="Me gustaría que fuera como..."></textarea></div>
+          <div class="row-value"><textarea class="p-notas" rows="2" placeholder="Me gustaría que fuera como..." oninput="guardarDatosEnCache();"></textarea></div>
         </div>
       `;
       contenedor.appendChild(div);
@@ -534,7 +538,6 @@
       calcularMontoTotalGlobal();
     }
 
-    // El resto de funciones JS (copiado, remoción y reseteo) continúan intactas
     function removerBloquePieza(id) {
       const bloques = document.querySelectorAll('.pieza-block');
       if (bloques.length > 1) {
@@ -561,6 +564,20 @@
       });
     }
 
+    function limpiarMascaraPrecio(input) {
+      let valor = input.value.replace(/[^\d.]/g, '');
+      input.value = valor ? parseFloat(valor) : '';
+    }
+
+    function aplicarMascaraPrecio(input) {
+      let valor = parseFloat(input.value);
+      if (!isNaN(valor)) {
+        input.value = `Q ${valor.toFixed(2)}`;
+      } else {
+        input.value = '';
+      }
+    }
+
     function calcularMontoTotalGlobal() {
       let sumaTotal = 0;
       const bloques = document.querySelectorAll('.pieza-block');
@@ -577,8 +594,94 @@
       document.getElementById('monto-total').value = `Q ${sumaTotal.toFixed(2)}`;
     }
 
+    // 💾 ALGORITMO LÓGICO DE GUARDADO EN MEMORIA LOCAL CACHÉ
+    function guardarDatosEnCache() {
+      localStorage.setItem("orden_cache_guardado", "true");
+      localStorage.setItem("cache_cliente", document.getElementById('cliente').value);
+      localStorage.setItem("cache_correo", document.getElementById('correo').value);
+      localStorage.setItem("cache_telefono", document.getElementById('telefono').value);
+      localStorage.setItem("cache_nit", document.getElementById('nit').value);
+      localStorage.setItem("cache_fecha", document.getElementById('fecha').value);
+      localStorage.setItem("cache_hora", document.getElementById('hora').value);
+      localStorage.setItem("cache_observaciones", document.getElementById('observaciones-generales').value);
+
+      // Guardar matriz estructurada de piezas independientes
+      let matrizPiezas = [];
+      const bloques = document.querySelectorAll('.pieza-block');
+      bloques.forEach(bloque => {
+        const blockId = bloque.id.replace('block-pieza-', '');
+        const colorOpt = bloque.querySelector(`input[name="color_${blockId}"]:checked`);
+        
+        matrizPiezas.push({
+          tipo: bloque.querySelector('.p-tipo').value,
+          ancho: bloque.querySelector('.p-ancho').value,
+          alto: bloque.querySelector('.p-alto').value,
+          unidad: bloque.querySelector('.p-unidad').value,
+          archivo: bloque.querySelector('.p-archivo').value,
+          software: bloque.querySelector('.p-software').value,
+          soporte: bloque.querySelector('.p-soporte').value,
+          diseno: bloque.querySelector('.p-diseno').value,
+          reproduccion: bloque.querySelector('.p-reproduccion').value,
+          color: colorOpt ? colorOpt.value : 'Color T',
+          post: bloque.querySelector('.p-post-redaccion').value,
+          precio: bloque.querySelector('.p-precio').value,
+          cantidad: bloque.querySelector('.p-cantidad').value,
+          notas: bloque.querySelector('.p-notas').value
+        });
+      });
+      localStorage.setItem("cache_matriz_piezas", JSON.stringify(matrizPiezas));
+    }
+
+    // ⏳ ALGORITMO LÓGICO DE RESTAURACIÓN DE CACHÉ TRAS CIERRES ACCIDENTALES
+    function cargarDatosDesdeCache() {
+      document.getElementById('cliente').value = localStorage.getItem("cache_cliente") || '';
+      document.getElementById('correo').value = localStorage.getItem("cache_correo") || '';
+      document.getElementById('telefono').value = localStorage.getItem("cache_telefono") || '';
+      document.getElementById('nit').value = localStorage.getItem("cache_nit") || '';
+      document.getElementById('fecha').value = localStorage.getItem("cache_fecha") || '';
+      document.getElementById('hora').value = localStorage.getItem("cache_hora") || '';
+      document.getElementById('observaciones-generales').value = localStorage.getItem("cache_observaciones") || '';
+      
+      actualizarTituloDinamico();
+
+      const contenedor = document.getElementById('piezas-contenedor');
+      contenedor.innerHTML = ''; // Limpiar nodos vacíos de inicio
+      seedIdPieza = 0;
+
+      const piezasArray = JSON.parse(localStorage.getItem("cache_matriz_piezas")) || [];
+      piezasArray.forEach(data => {
+        agregarNuevoBloquePieza();
+        let uiBlock = contenedor.lastElementChild;
+        const currentSeedId = uiBlock.id.replace('block-pieza-', '');
+
+        uiBlock.querySelector('.p-tipo').value = data.tipo || '';
+        uiBlock.querySelector('.p-ancho').value = data.ancho || '';
+        uiBlock.querySelector('.p-alto').value = data.alto || '';
+        uiBlock.querySelector('.p-unidad').value = data.unidad || 'In';
+        uiBlock.querySelector('.p-archivo').value = data.archivo || '';
+        uiBlock.querySelector('.p-software').value = data.software || '';
+        uiBlock.querySelector('.p-soporte').value = data.soporte || '';
+        uiBlock.querySelector('.p-diseno').value = data.diseno || '0';
+        uiBlock.querySelector('.p-reproduccion').value = data.reproduccion || '';
+        uiBlock.querySelector('.p-post-redaccion').value = data.post || '';
+        uiBlock.querySelector('.p-precio').value = data.precio || '';
+        uiBlock.querySelector('.p-cantidad').value = data.cantidad || '';
+        uiBlock.querySelector('.p-notas').value = data.notas || '';
+
+        if (data.color) {
+          let radioTarget = uiBlock.querySelector(`input[name="color_${currentSeedId}"][value="${data.color}"]`);
+          if (radioTarget) radioTarget.checked = true;
+        }
+      });
+
+      calcularMontoTotalGlobal();
+    }
+
+    // EL BOTÓN ELIMINAR DATOS ES EL ÚNICO FACULTADO PARA BORRAR EL LOCALSTORAGE
     function eliminarTodosLosDatos() {
       if (confirm("¿Estás seguro de que deseas eliminar todos los datos ingresados en la orden?")) {
+        localStorage.clear(); // Destruye por completo la persistencia del caché local
+
         document.getElementById('cliente').value = '';
         document.getElementById('correo').value = '';
         document.getElementById('telefono').value = '';
@@ -594,7 +697,7 @@
         seedIdPieza = 0;           
         agregarNuevoBloquePieza(); 
 
-        mostrarToast("¡Todos los datos han sido eliminados!");
+        mostrarToast("¡Todos los datos e historial de caché han sido eliminados!");
       }
     }
 
