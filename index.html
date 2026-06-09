@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Generador de Orden de Trabajo</title>
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 x=%225%22>📋</text></svg>">
+
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -20,7 +23,7 @@
       position: relative;
     }
 
-    /* EL BOTÓN FLOTANTE CON EL TEXTO PERFECTAMENTE CENTRADO */
+    /* EL BOTÓN FLOTANTE ÚNICO ORIGINAL DE LA DERECHA CON EL TEXTO PERFECTAMENTE CENTRADO */
     .btn-clear-floating {
       position: fixed;
       top: 20px;
@@ -61,7 +64,6 @@
       user-select: none;
     }
 
-    /* Ajuste de flexbox para centrado absoluto en el área expandida */
     .btn-clear-text {
       font-size: 14px;
       font-weight: bold;
@@ -70,7 +72,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      width: calc(100% - 45px); /* Toma exactamente el espacio restante */
+      width: calc(100% - 45px); 
       padding-right: 18px; 
       transition: opacity 0.25s ease;
     }
@@ -532,6 +534,7 @@
       calcularMontoTotalGlobal();
     }
 
+    // El resto de funciones JS (copiado, remoción y reseteo) continúan intactas
     function removerBloquePieza(id) {
       const bloques = document.querySelectorAll('.pieza-block');
       if (bloques.length > 1) {
@@ -556,20 +559,6 @@
           btnEliminar.style.display = blocks_len === 1 ? 'none' : 'inline-block';
         }
       });
-    }
-
-    function limpiarMascaraPrecio(input) {
-      let valor = input.value.replace(/[^\d.]/g, '');
-      input.value = valor ? parseFloat(valor) : '';
-    }
-
-    function aplicarMascaraPrecio(input) {
-      let valor = parseFloat(input.value);
-      if (!isNaN(valor)) {
-        input.value = `Q ${valor.toFixed(2)}`;
-      } else {
-        input.value = '';
-      }
     }
 
     function calcularMontoTotalGlobal() {
@@ -617,7 +606,7 @@
       let listaPiezas = [];
       const bloques = document.querySelectorAll('.pieza-block');
       bloques.forEach((bloque, index) => {
-        const tipo = block_el = bloque.querySelector('.p-tipo').value.trim() || 'Sin especificar';
+        const tipo = bloque.querySelector('.p-tipo').value.trim() || 'Sin especificar';
         
         const anchoVal = bloque.querySelector('.p-ancho').value.trim();
         const altoVal = bloque.querySelector('.p-alto').value.trim();
