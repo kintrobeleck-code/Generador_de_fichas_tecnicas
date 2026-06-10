@@ -71,7 +71,18 @@
       background-color: #f7fafc;
       color: #FF1FCF;
     }
-    .tab-arrow { font-size: 14px; font-weight: bold; user-select: none; }
+    .tab-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-size: 14px;
+      font-weight: bold;
+      user-select: none;
+      text-align: center;
+      line-height: 1;
+    }
 
     .sidebar-header {
       font-size: 18px;
@@ -215,27 +226,6 @@
     .completed-orders-list .order-name { text-decoration: line-through; color: #718096; }
 
     /* MENÚ CONTEXTUAL FLOTANTE */
-    .custom-context-menu {
-      position: absolute;
-      background: #FFFFFF;
-      border: 1px solid #cbd5e0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      border-radius: 4px;
-      padding: 5px 0;
-      z-index: 3000;
-      display: none;
-      min-width: 140px;
-    }
-    .context-menu-item {
-      padding: 8px 14px;
-      font-size: 13px;
-      color: #e53e3e;
-      font-weight: bold;
-      cursor: pointer;
-      list-style: none;
-      text-transform: uppercase;
-    }
-    .context-menu-item:hover { background-color: #f7fafc; }
 
     /* PANEL CENTRAL DE LA ORDEN FOCALIZADA */
     .container {
@@ -492,6 +482,61 @@
       border-color: #cbd5e0;
     }
 
+    .delete-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 20, 85, 0.62);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 4000;
+      padding: 16px;
+    }
+
+    .delete-modal-card {
+      width: 100%;
+      max-width: 360px;
+      background: #FFFFFF;
+      color: #0A1A6A;
+      border-radius: 12px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+      padding: 18px;
+      text-align: center;
+    }
+
+    .delete-modal-card p {
+      margin: 0 0 14px;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+
+    .delete-modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .delete-modal-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+
+    .delete-modal-btn.cancel {
+      background: #E5E7EB;
+      color: #0A1A6A;
+    }
+
+    .delete-modal-btn.confirm {
+      background: #F000B8;
+      color: #FFFFFF;
+    }
+
     .toast {
       position: fixed;
       bottom: 25px;
@@ -516,7 +561,7 @@
 <body>
 
   <div class="sidebar-container" id="sidebar">
-    <button class="sidebar-tab-trigger" onclick="toggleSidebar()" id="sidebar-tab">
+    <button class="sidebar-tab-trigger" onclick="toggleSidebar(event)" id="sidebar-tab">
       <span class="tab-arrow" id="tab-arrow-indicator">◀</span>
     </button>
 
@@ -537,10 +582,6 @@
     </div>
     <ul class="completed-orders-list" id="lista-ordenes-completadas"></ul>
   </div>
-
-  <ul class="custom-context-menu" id="context-menu">
-    <li class="context-menu-item" onclick="eliminarOrdenContextual()">Eliminar Orden</li>
-  </ul>
 
   <div class="logo-puntos" id="logo-puntos" aria-hidden="true">
     <span class="logo-punto"></span>
@@ -618,6 +659,16 @@
 
   <div id="toast" class="toast">¡Copiado con éxito!</div>
 
+  <div id="delete-modal-overlay" class="delete-modal-overlay" aria-hidden="true">
+    <div class="delete-modal-card" role="dialog" aria-modal="true" aria-label="Confirmar eliminación">
+      <p>¿Deseas eliminar esta orden?</p>
+      <div class="delete-modal-actions">
+        <button type="button" class="delete-modal-btn cancel" id="btn-cancel-delete">Cancelar</button>
+        <button type="button" class="delete-modal-btn confirm" id="btn-confirm-delete">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let poolOrdenes = [];
     let idOrdenFocalizada = null;
@@ -632,8 +683,24 @@
     document.addEventListener("DOMContentLoaded", () => {
       inicializarBaseDeDatos();
       configurarEventosMenuContextual();
+      configurarModalEliminar();
       actualizarAnimacionLogo();
       window.addEventListener('scroll', actualizarAnimacionLogo, { passive: true });
+
+      document.addEventListener('click', (event) => {
+        const sidebar = document.getElementById('sidebar');
+        const trigger = document.getElementById('sidebar-tab');
+
+        if (!sidebar || !trigger) return;
+
+        const clicDentroSidebar = sidebar.contains(event.target);
+        const clicEnTrigger = trigger.contains(event.target);
+
+        if (sidebar.classList.contains('open') && !clicDentroSidebar && !clicEnTrigger) {
+          sidebar.classList.remove('open');
+          document.getElementById('tab-arrow-indicator').innerText = '◀';
+        }
+      });
     });
 
     function actualizarAnimacionLogo() {
@@ -642,7 +709,8 @@
       logoPuntos.classList.toggle('is-hidden', window.scrollY > 50);
     }
 
-    function toggleSidebar() {
+    function toggleSidebar(event) {
+      if (event) event.stopPropagation();
       const sidebar = document.getElementById('sidebar');
       const arrow = document.getElementById('tab-arrow-indicator');
       sidebar.classList.toggle('open');
@@ -761,7 +829,11 @@
         li.appendChild(chk);
         li.appendChild(clickBox);
 
-        li.addEventListener('contextmenu', (e) => { abrirMenuContextualPersonalizado(e, ord.id); });
+        li.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          idOrdenContextualFoco = ord.id;
+          mostrarModalEliminar();
+        });
 
         if (ord.completada) {
           listaCompletadas.appendChild(li);
@@ -913,35 +985,60 @@
     }
 
     function configurarEventosMenuContextual() {
-      const menu = document.getElementById('context-menu');
-      document.addEventListener('click', () => { menu.style.display = 'none'; });
-    }
-
-    function abrirMenuContextualPersonalizado(e, id) {
-      e.preventDefault();
-      idOrdenContextualFoco = id;
-      const menu = document.getElementById('context-menu');
-      menu.style.top = `${e.pageY}px`;
-      menu.style.left = `${e.pageX}px`;
-      menu.style.display = 'block';
-    }
-
-    function eliminarOrdenContextual() {
-      if (!idOrdenContextualFoco) return;
-      if (poolOrdenes.length === 1) {
-        alert("El sistema requiere mantener al menos una orden activa.");
-        return;
-      }
-      if (confirm("¿Deseas eliminar permanentemente esta orden?")) {
-        poolOrdenes = poolOrdenes.filter(o => o.id !== idOrdenContextualFoco);
-        if (idOrdenFocalizada === idOrdenContextualFoco) {
-          idOrdenFocalizada = poolOrdenes[0].id;
+      document.addEventListener('contextmenu', (event) => {
+        if (event.target.closest('.order-item')) {
+          event.preventDefault();
         }
-        guardarEstadoEnLocalStorage();
-        renderizarListadosSidebar();
-        cargarOrdenEnPantallaPrincipal(idOrdenFocalizada);
-        mostrarToast("Orden eliminada");
+      });
+    }
+
+    function mostrarModalEliminar() {
+      const overlay = document.getElementById('delete-modal-overlay');
+      if (overlay) overlay.style.display = 'flex';
+    }
+
+    function configurarModalEliminar() {
+      const overlay = document.getElementById('delete-modal-overlay');
+      const cancelBtn = document.getElementById('btn-cancel-delete');
+      const confirmBtn = document.getElementById('btn-confirm-delete');
+
+      if (!overlay || !cancelBtn || !confirmBtn) return;
+
+      cancelBtn.addEventListener('click', () => {
+        overlay.style.display = 'none';
+        idOrdenContextualFoco = null;
+      });
+
+      confirmBtn.addEventListener('click', () => {
+        overlay.style.display = 'none';
+        eliminarOrdenContextual();
+      });
+
+      overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) {
+          overlay.style.display = 'none';
+          idOrdenContextualFoco = null;
+        }
+      });
+    }
+
+    function eliminarOrdenContextual(event) {
+      if (event) event.stopPropagation();
+
+      if (!idOrdenContextualFoco) return;
+
+      poolOrdenes = poolOrdenes.filter(o => o.id !== idOrdenContextualFoco);
+      if (poolOrdenes.length === 0) {
+        const nuevaOrd = generarObjetoOrdenEstructural();
+        poolOrdenes.push(nuevaOrd);
+        idOrdenFocalizada = nuevaOrd.id;
+      } else if (idOrdenFocalizada === idOrdenContextualFoco) {
+        idOrdenFocalizada = poolOrdenes[0].id;
       }
+      guardarEstadoEnLocalStorage();
+      renderizarListadosSidebar();
+      cargarOrdenEnPantallaPrincipal(idOrdenFocalizada);
+      mostrarToast("Orden eliminada");
       idOrdenContextualFoco = null;
     }
 
@@ -1114,6 +1211,34 @@
           btnEliminar.style.display = blocks_len === 1 ? 'none' : 'inline-block';
         }
       });
+    }
+
+    function limpiarMascaraPrecio(input) {
+      input.value = input.value.replace(/[^\d.]/g, '');
+    }
+
+    function aplicarMascaraPrecio(input) {
+      const raw = input.value.replace(/[^\d.]/g, '');
+      const precio = raw ? parseFloat(raw) : 0;
+      input.value = Number.isFinite(precio) ? `Q ${precio.toFixed(2)}` : '';
+    }
+
+    function calcularMontoTotalGlobal() {
+      const bloques = document.querySelectorAll('.pieza-block');
+      let total = 0;
+
+      bloques.forEach((bloque) => {
+        const precioRaw = bloque.querySelector('.p-precio')?.value || '';
+        const cantidadRaw = bloque.querySelector('.p-cantidad')?.value || '0';
+        const precio = parseFloat(precioRaw.replace(/[^\d.]/g, '')) || 0;
+        const cantidad = parseInt(cantidadRaw, 10) || 0;
+        total += precio * cantidad;
+      });
+
+      const campoMonto = document.getElementById('monto-total');
+      if (campoMonto) {
+        campoMonto.value = `Q ${total.toFixed(2)}`;
+      }
     }
 
     function extraerEstructuraCompleta() {
