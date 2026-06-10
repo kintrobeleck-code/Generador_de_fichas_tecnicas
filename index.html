@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Generador de Orden de Trabajo</title>
+  <title>Gestor de Órdenes de Trabajo - Neon CC</title>
+  
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%22 y=%2257%22 font-size=%2280%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>📋</text></svg>">
 
   <style>
@@ -13,112 +14,270 @@
 
     body {
       font-family: 'Arial Narrow', Arial, sans-serif;
-      background-color: #f5f5f5;
+      background-color: #081455; 
+      color: #F2F2F2; 
       margin: 0;
       padding: 40px 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
       position: relative;
+      overflow-x: hidden;
     }
 
-    /* EL BOTÓN FLOTANTE ÚNICO ORIGINAL DE LA DERECHA CON EL TEXTO PERFECTAMENTE CENTRADO */
-    .btn-clear-floating {
+    /* BARRA LATERAL DESLIZANTE (SIDEBAR) EN COLOR BLANCO CONTRASTANTE */
+    .sidebar-container {
       position: fixed;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      align-items: center;
-      background-color: #1a365d; 
-      color: white;
-      border: none;
-      border-radius: 25px;
-      padding: 0;
-      height: 45px;
-      width: 45px;
-      overflow: hidden;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      transition: width 0.35s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.3s ease;
+      top: 0;
+      right: -320px;
+      width: 320px;
+      height: 100%;
+      background-color: #FFFFFF; 
+      color: #333333; 
+      box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+      transition: right 0.3s cubic-bezier(0.25, 1, 0.5, 1);
       z-index: 2000;
-      white-space: nowrap;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      border-left: 1px solid #cbd5e0;
     }
 
-    .btn-clear-floating:hover {
-      width: 170px; 
-      background-color: #c53030; 
+    .sidebar-container.open {
+      right: 0;
     }
 
-    .btn-clear-icon-wrapper {
-      width: 45px;
-      height: 45px;
+    /* PESTAÑA DE CARPETA INTERACTIVA — SOLO FLECHA */
+    .sidebar-tab-trigger {
+      position: absolute;
+      top: 20px;
+      left: -35px; 
+      width: 35px;
+      height: 50px;
+      background-color: #FFFFFF; 
+      color: #F000B8; 
+      border: 1px solid #cbd5e0;
+      border-right: none;
+      border-radius: 8px 0 0 8px;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
+      box-shadow: -4px 2px 10px rgba(0,0,0,0.15);
+      z-index: 2001;
+      transition: background-color 0.2s, color 0.2s;
     }
+    .sidebar-tab-trigger:hover {
+      background-color: #f7fafc;
+      color: #FF1FCF;
+    }
+    .tab-arrow { font-size: 14px; font-weight: bold; user-select: none; }
 
-    .btn-clear-icon {
+    .sidebar-header {
       font-size: 18px;
-      user-select: none;
-    }
-
-    .btn-clear-text {
-      font-size: 14px;
       font-weight: bold;
       text-transform: uppercase;
-      opacity: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: calc(100% - 45px); 
-      padding-right: 18px; 
-      transition: opacity 0.25s ease;
-    }
-
-    .btn-clear-floating:hover .btn-clear-text {
-      opacity: 1;
-    }
-
-    .container {
-      background: #ffffff;
-      padding: 20px 40px 40px 40px;
-      width: 100%;
-      max-width: 650px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
-
-    h2, h3 {
-      text-align: center;
-      font-weight: bold;
-      text-transform: uppercase;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      color: #1a202c;
       letter-spacing: 1px;
     }
 
-    h2 {
+    /* 🌸 COMPORTAMIENTO HOVER DEL BOTÓN DE LA BARRA LATERAL (Inversión a Azul Central) */
+    .btn-new-order {
+      width: 100%;
+      background-color: #F000B8; 
+      color: #FFFFFF;
+      border: 1px solid #F000B8;
+      padding: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(240, 0, 184, 0.3);
+      transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    }
+    .btn-new-order:hover { 
+      background-color: #0A1A6A; /* Azul base dominante */
+      color: #FFFFFF; 
+      border-color: #0A1A6A;
+    }
+
+    .orders-section-title {
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #4a5568;
+      margin-bottom: 8px;
+      margin-top: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    .orders-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+
+    .order-item {
+      display: flex;
+      align-items: center;
+      background-color: #f7fafc; 
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.15s;
+      border: 1px solid #e2e8f0;
+      border-left: 5px solid #F000B8; 
+      position: relative;
+    }
+    .order-item:hover { background-color: #edf2f7; transform: translateX(-2px); }
+    .order-item.active-ui { background-color: #e2e8f0; border-color: #cbd5e0; }
+
+    .order-checkbox {
+      margin-right: 12px;
+      width: 17px;
+      height: 17px;
+      accent-color: #F000B8;
+      cursor: pointer;
+    }
+
+    .order-details-click {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .order-name {
+      font-size: 14px;
+      font-weight: bold;
+      color: #2d3748; 
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .order-price {
+      font-size: 12px;
+      color: #4a5568;
+    }
+
+    .completed-header-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 2px solid #e2e8f0;
+      padding-top: 15px;
+      margin-top: 15px;
+    }
+
+    .completed-trigger-btn {
+      background: transparent;
+      border: none;
+      color: #4a5568;
+      font-weight: bold;
+      font-size: 13px;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .completed-trigger-btn:hover { color: #F000B8; }
+
+    .btn-purge-completed {
+      background: transparent;
+      border: none;
+      color: #D800A5;
+      cursor: pointer;
+      font-size: 16px;
+      display: none; 
+    }
+    .btn-purge-completed:hover { color: #FF1FCF; }
+
+    .completed-orders-list {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0 0 0;
+      max-height: 150px;
+      overflow-y: auto;
+      display: none;
+    }
+    .completed-orders-list.show { display: block; }
+
+    .completed-orders-list .order-item { opacity: 0.6; }
+    .completed-orders-list .order-name { text-decoration: line-through; color: #718096; }
+
+    /* MENÚ CONTEXTUAL FLOTANTE */
+    .custom-context-menu {
+      position: absolute;
+      background: #FFFFFF;
+      border: 1px solid #cbd5e0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border-radius: 4px;
+      padding: 5px 0;
+      z-index: 3000;
+      display: none;
+      min-width: 140px;
+    }
+    .context-menu-item {
+      padding: 8px 14px;
+      font-size: 13px;
+      color: #e53e3e;
+      font-weight: bold;
+      cursor: pointer;
+      list-style: none;
+      text-transform: uppercase;
+    }
+    .context-menu-item:hover { background-color: #f7fafc; }
+
+    /* PANEL CENTRAL DE LA ORDEN FOCALIZADA */
+    .container {
+      background: #0A1A6A; 
+      border: 1px solid #0E247D;
+      padding: 20px 40px 40px 40px;
+      width: 100%;
+      max-width: 650px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      border-radius: 8px;
+    }
+
+    .main-order-title {
       font-size: 24px;
       margin-top: 10px;
       margin-bottom: 25px;
-      color: #000000;
-      transition: color 0.2s;
+      color: #FFFFFF;
+      text-align: center;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
-    h3.section-title {
+    .container h3.section-title {
       font-size: 16px;
       text-align: left;
-      border-bottom: 2px solid #000000;
+      border-bottom: 2px solid #F000B8; 
       padding-bottom: 4px;
       margin-top: 30px;
       margin-bottom: 15px;
-      color: #000000;
+      color: #FFFFFF;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     .row {
       display: flex;
       align-items: flex-end;
-      border-bottom: 1.5px solid #666666;
-      padding: 6px 0;
-      margin-bottom: 4px;
+      border-bottom: 1.5px solid #0E247D;
+      padding: 8px 0;
+      margin-bottom: 6px;
     }
 
     .row-label {
@@ -127,7 +286,8 @@
       font-size: 16px;
       text-align: right;
       padding-right: 20px;
-      color: #000000;
+      color: #F2F2F2;
+      opacity: 0.9;
     }
 
     .row-value {
@@ -145,27 +305,26 @@
       background: transparent;
       font-family: 'Arial Narrow', Arial, sans-serif;
       font-size: 16px;
-      color: #333333;
+      color: #FFFFFF;
       padding: 2px 0;
     }
 
-    input:focus, textarea:focus {
-      outline: none;
+    input[type="text"]::placeholder, input[type="email"]::placeholder, input[type="number"]::placeholder, textarea::placeholder {
+      color: #5d6eb3;
     }
 
-    ::placeholder {
-      color: #b0b0b0;
-      opacity: 1;
-    }
+    input:focus, textarea:focus { outline: none; }
 
     .pieza-block {
-      background-color: #fcfcfc;
-      border: 1px solid #b0b0b0;
+      background-color: #081455;
+      border: 1px solid #0E247D;
       padding: 20px;
       margin-bottom: 25px;
       position: relative;
       border-radius: 6px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      border-left: 5px solid var(--client-neon-color, #00FF66); 
+      transition: border-left-color 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
     .pieza-block-header {
@@ -173,19 +332,14 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 15px;
-      border-bottom: 2px solid #ff4081;
+      border-bottom: 2px solid #0E247D;
       padding-bottom: 4px;
     }
 
-    .pieza-title {
-      font-weight: bold;
-      font-size: 16px;
-      color: #ff4081;
-      text-transform: uppercase;
-    }
+    .pieza-title { font-weight: bold; font-size: 16px; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.5px; }
 
     .btn-remove-pieza {
-      background: #e53e3e;
+      background: #D800A5;
       color: white;
       border: none;
       padding: 4px 10px;
@@ -195,10 +349,7 @@
       font-weight: bold;
       text-transform: uppercase;
     }
-
-    .btn-remove-pieza:hover {
-      background: #c53030;
-    }
+    .btn-remove-pieza:hover { background: #F000B8; }
 
     .btn-add-container {
       display: flex;
@@ -206,38 +357,45 @@
       margin: 20px 0 30px 0;
     }
 
+    /* 🌸 BOTÓN AGREGAR PIEZA - ROSADO NEÓN CON HOVER INVERTIDO A BLANCO */
     .btn-add {
-      background-color: #4a5568;
-      color: white;
-      border: none;
+      background-color: #F000B8;
+      color: #FFFFFF;
+      border: 1.5px solid #F000B8;
       padding: 10px 20px;
       font-size: 14px;
       font-weight: bold;
       border-radius: 4px;
       cursor: pointer;
       text-transform: uppercase;
+      box-shadow: 0 2px 8px rgba(240, 0, 184, 0.3);
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+    .btn-add:hover { 
+      background-color: #FFFFFF; 
+      color: #F000B8;
     }
 
-    .btn-add:hover {
-      background-color: #2d3748;
-    }
+    .dimension-container { display: flex; align-items: center; width: 100%; }
+    .dim-separator { padding: 0 6px; color: #FF1FCF; font-size: 14px; user-select: none; }
 
-    .dimension-container {
+    .color-flex { display: flex; flex-wrap: wrap; width: 100%; gap: 6px; }
+    .option-item {
       display: flex;
       align-items: center;
-      width: 100%;
+      gap: 6px;
+      font-size: 15px;
+      color: #F2F2F2;
+      cursor: pointer;
+      flex: 1 1 calc(50% - 6px);
+      min-width: 120px;
     }
-
-    .dim-input {
-      width: 70px !important;
-      text-align: center;
-    }
-
-    .dim-separator {
-      padding: 0 6px;
-      color: #666666;
-      font-size: 14px;
-      user-select: none;
+    
+    .option-item input[type="radio"] { 
+      accent-color: var(--client-neon-color, #00FF66); 
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
     }
 
     select.custom-select {
@@ -245,32 +403,13 @@
       background: transparent;
       font-family: 'Arial Narrow', Arial, sans-serif;
       font-size: 15px;
-      color: #333333;
+      color: #FFFFFF;
       width: 100%;
       cursor: pointer;
+      accent-color: #081455;
     }
+    select.custom-select option { background-color: #081455; color: #FFFFFF; }
     select.custom-select:focus { outline: none; }
-
-    select.dim-select {
-      width: auto;
-      margin-left: auto;
-    }
-
-    .color-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-
-    .option-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 15px;
-      color: #333333;
-      cursor: pointer;
-    }
 
     .row.textarea-row { align-items: flex-start; }
 
@@ -290,63 +429,105 @@
       font-size: 15px;
       font-weight: bold;
       cursor: pointer;
-      color: #ffffff;
       text-transform: uppercase;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
     }
 
-    .btn-format { background-color: #4a5568; }
-    .btn-wa { background-color: #25d366; }
-    button:hover { opacity: 0.9; }
+    /* 🌸 BOTÓN COPIAR CON FORMATOS - ROSADO NEÓN CON HOVER INVERTIDO A BLANCO */
+    .btn-format { 
+      background-color: #F000B8; 
+      color: #FFFFFF;
+      border: 1.5px solid #F000B8;
+    }
+    .btn-format:hover { 
+      background-color: #FFFFFF; 
+      color: #F000B8; 
+    }
+
+    /* 🟢 BOTÓN WHATSAPP VERDE LLAMATIVO ORIGINAL, SE INVIERTE EN HOVER A FONDO BLANCO Y LETRAS VERDES OSCURAS */
+    .btn-wa { 
+      background-color: #25d366; 
+      color: #FFFFFF; 
+      border: 1.5px solid #25d366;
+    }
+    .btn-wa:hover { 
+      background-color: #FFFFFF; 
+      color: #0E6B2E; 
+      border-color: #cbd5e0;
+    }
 
     .toast {
       position: fixed;
       bottom: 25px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.85);
-      color: #ffffff;
+      background: #FFFFFF; 
+      border: 1.5px solid #0E247D; 
+      color: #0A1A6A; 
       padding: 12px 24px;
       border-radius: 25px;
       font-size: 14px;
+      font-weight: bold;
       opacity: 0;
-      transition: opacity 0.3s;
+      transition: opacity 0.3s ease;
       pointer-events: none;
-      z-index: 1000;
+      z-index: 3000;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
     .toast.show { opacity: 1; }
   </style>
 </head>
 <body>
 
-  <button class="btn-clear-floating" onclick="eliminarTodosLosDatos()" title="Eliminar datos">
-    <div class="btn-clear-icon-wrapper">
-      <span class="btn-clear-icon">🗑️</span>
+  <div class="sidebar-container" id="sidebar">
+    <button class="sidebar-tab-trigger" onclick="toggleSidebar()" id="sidebar-tab">
+      <span class="tab-arrow" id="tab-arrow-indicator">◀</span>
+    </button>
+
+    <div class="sidebar-header">
+      <span>Órdenes de Trabajo</span>
     </div>
-    <span class="btn-clear-text">eliminar datos</span>
-  </button>
+    
+    <button class="btn-new-order" onclick="crearNuevaOrdenVacia()">＋ Nueva Orden</button>
+    
+    <div class="orders-section-title">Órdenes Activas</div>
+    <ul class="orders-list" id="lista-ordenes-activas"></ul>
+    
+    <div class="completed-header-container">
+      <button class="completed-trigger-btn" onclick="toggleCompletedDropdown()">
+        <span id="completed-arrow">▶</span> Completadas (<span id="completed-count">0</span>)
+      </button>
+      <button class="btn-purge-completed" id="btn-purge-completed" onclick="purgarTodasLasCompletadas()" title="Eliminar completadas">🗑️</button>
+    </div>
+    <ul class="completed-orders-list" id="lista-ordenes-completadas"></ul>
+  </div>
+
+  <ul class="custom-context-menu" id="context-menu">
+    <li class="context-menu-item" onclick="eliminarOrdenContextual()">Eliminar Orden</li>
+  </ul>
 
   <div class="container">
-    <h2 id="main-title">Orden</h2>
+    <h2 id="main-title" class="main-order-title">Orden</h2>
     
     <h3 class="section-title">Datos del cliente</h3>
     
     <div class="row">
       <div class="row-label">Nombre del cliente</div>
       <div class="row-value">
-        <input type="text" id="cliente" placeholder="Juanito" oninput="actualizarTituloDinamico(); guardarDatosEnCache();">
+        <input type="text" id="cliente" placeholder="Juanito" oninput="document.documentElement.style.setProperty('--client-neon-color', obtenerColorCanonicoPorNombre(this.value)); actualizarFlujoOrdenActual();">
       </div>
     </div>
     
     <div class="row">
       <div class="row-label">Correo del que se envía</div>
-      <div class="row-value"><input type="email" id="correo" placeholder="juanitoperez@gmail.com" oninput="guardarDatosEnCache();"></div>
+      <div class="row-value"><input type="email" id="correo" placeholder="juanitoperez@gmail.com" oninput="actualizarFlujoOrdenActual();"></div>
     </div>
 
     <div class="row">
       <div class="row-label">Teléfono</div>
       <div class="row-value">
-        <input type="text" id="telefono" placeholder="1234 5678" oninput="formatearTelefono(this); guardarDatosEnCache();">
+        <input type="text" id="telefono" placeholder="1234 5678" oninput="formatearTelefono(this); actualizarFlujoOrdenActual();">
       </div>
     </div>
 
@@ -354,7 +535,7 @@
     <div id="piezas-contenedor"></div>
 
     <div class="btn-add-container">
-      <button type="button" class="btn-add" onclick="agregarNuevoBloquePieza(); guardarDatosEnCache();">＋ Agregar otra pieza</button>
+      <button type="button" class="btn-add" onclick="agregarNuevoBloquePieza(); actualizarFlujoOrdenActual();">＋ Agregar otra pieza</button>
     </div>
 
     <h3 class="section-title">Facturación y Entrega</h3>
@@ -362,28 +543,28 @@
     <div class="row">
       <div class="row-label">Monto total</div>
       <div class="row-value">
-        <input type="text" id="monto-total" placeholder="Q 0.00" readonly style="font-weight: bold; color: #000;">
+        <input type="text" id="monto-total" placeholder="Q 0.00" readonly style="font-weight: bold; color: #FFFFFF;">
       </div>
     </div>
 
     <div class="row">
       <div class="row-label">Nit</div>
-      <div class="row-value"><input type="text" id="nit" placeholder="CF" oninput="guardarDatosEnCache();"></div>
+      <div class="row-value"><input type="text" id="nit" placeholder="CF" oninput="actualizarFlujoOrdenActual();"></div>
     </div>
 
     <div class="row">
       <div class="row-label">Fecha de entrega</div>
-      <div class="row-value"><input type="text" id="fecha" placeholder="X / X / 2026" oninput="guardarDatosEnCache();"></div>
+      <div class="row-value"><input type="text" id="fecha" placeholder="X / X / 2026" oninput="actualizarFlujoOrdenActual();"></div>
     </div>
 
     <div class="row">
       <div class="row-label">Hora de entrega</div>
-      <div class="row-value"><input type="text" id="hora" placeholder="10:00AM" oninput="guardarDatosEnCache();"></div>
+      <div class="row-value"><input type="text" id="hora" placeholder="10:00AM" oninput="actualizarFlujoOrdenActual();"></div>
     </div>
 
     <div class="row textarea-row">
       <div class="row-label">Observaciones generales</div>
-      <div class="row-value"><textarea id="observaciones-generales" rows="2" placeholder="Indicaciones globales de la entrega..." oninput="guardarDatosEnCache();"></textarea></div>
+      <div class="row-value"><textarea id="observaciones-generales" rows="2" placeholder="Indicaciones globales de la entrega..." oninput="actualizarFlujoOrdenActual();"></textarea></div>
     </div>
 
   </div>
@@ -396,25 +577,332 @@
   <div id="toast" class="toast">¡Copiado con éxito!</div>
 
   <script>
+    let poolOrdenes = [];
+    let idOrdenFocalizada = null;
     let seedIdPieza = 0;
+    let idOrdenContextualFoco = null;
 
-    // EVENTO RECONSTRUCTOR AL CARGAR LA PÁGINA
+    const paletaCanonicosContraste = [
+      "#00FF66", "#00F0FF", "#FFFF00", "#FF6600", "#CC00FF", "#A3FF00", "#38BDF8"
+    ];
+
     document.addEventListener("DOMContentLoaded", () => {
-      if (localStorage.getItem("orden_cache_guardado") === "true") {
-        cargarDatosDesdeCache();
-      } else {
-        agregarNuevoBloquePieza();
-      }
+      inicializarBaseDeDatos();
+      configurarEventosMenuContextual();
     });
 
-    function actualizarTituloDinamico() {
-      const nombreInput = document.getElementById('cliente').value.trim();
-      const tituloH2 = document.getElementById('main-title');
-      if (nombreInput) {
-        tituloH2.innerText = `Orden de ${nombreInput}`;
-      } else {
-        tituloH2.innerText = "Orden";
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const arrow = document.getElementById('tab-arrow-indicator');
+      sidebar.classList.toggle('open');
+      arrow.innerText = sidebar.classList.contains('open') ? "▶" : "◀";
+    }
+
+    function toggleCompletedDropdown() {
+      const lista = document.getElementById('lista-ordenes-completadas');
+      const arrow = document.getElementById('completed-arrow');
+      lista.classList.toggle('show');
+      arrow.innerText = lista.classList.contains('show') ? "▼" : "▶";
+    }
+
+    function obtenerColorCanonicoPorNombre(nombre) {
+      if (!nombre || nombre.trim() === "") return "#00FF66"; 
+      let hash = 0;
+      for (let i = 0; i < nombre.length; i++) {
+        hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
       }
+      let index = Math.abs(hash) % paletaCanonicosContraste.length;
+      return paletaCanonicosContraste[index];
+    }
+
+    function inicializarBaseDeDatos() {
+      const cacheDB = localStorage.getItem("db_pool_ordenes");
+      const cacheFoco = localStorage.getItem("db_id_focalizada");
+
+      if (cacheDB) {
+        poolOrdenes = JSON.parse(cacheDB);
+      }
+
+      if (poolOrdenes.length === 0) {
+        let ordenInicial = generarObjetoOrdenEstructural();
+        poolOrdenes.push(ordenInicial);
+        idOrdenFocalizada = ordenInicial.id;
+      } else {
+        idOrdenFocalizada = cacheFoco && poolOrdenes.some(o => o.id === cacheFoco) ? cacheFoco : poolOrdenes[0].id;
+      }
+
+      guardarEstadoEnLocalStorage();
+      renderizarListadosSidebar();
+      cargarOrdenEnPantallaPrincipal(idOrdenFocalizada);
+    }
+
+    function generarObjetoOrdenEstructural() {
+      return {
+        id: "ord_" + Date.now() + Math.random().toString(36).substr(2, 4),
+        cliente: "", correo: "", telefono: "", nit: "", fecha: "", hora: "", observaciones: "",
+        completada: false,
+        montoTotalStr: "Q 0.00",
+        piezas: [{
+          tipo: "", ancho: "", alto: "", unidad: "In", archivo: "", software: "", soporte: "",
+          diseno: "0", reproduccion: "", color: "Color T", post: "", precio: "", cantidad: "", notas: ""
+        }]
+      };
+    }
+
+    function guardarEstadoEnLocalStorage() {
+      localStorage.setItem("db_pool_ordenes", JSON.stringify(poolOrdenes));
+      localStorage.setItem("db_id_focalizada", idOrdenFocalizada);
+    }
+
+    function renderizarListadosSidebar() {
+      const listaActivas = document.getElementById('lista-ordenes-activas');
+      const listaCompletadas = document.getElementById('lista-ordenes-completadas');
+      const btnPurge = document.getElementById('btn-purge-completed');
+      const countCompletadas = document.getElementById('completed-count');
+
+      listaActivas.innerHTML = '';
+      listaCompletadas.innerHTML = '';
+
+      let completadasContador = 0;
+
+      poolOrdenes.forEach(ord => {
+        const li = document.createElement('li');
+        li.className = `order-item ${ord.id === idOrdenFocalizada ? 'active-ui' : ''}`;
+        li.setAttribute('data-id', ord.id);
+        
+        li.style.borderLeftColor = obtenerColorCanonicoPorNombre(ord.cliente);
+
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.className = 'order-checkbox';
+        chk.checked = ord.completada;
+        chk.onclick = (e) => {
+          e.stopPropagation();
+          alternarEstadoCompletadoOrden(ord.id, chk.checked);
+        };
+
+        const clickBox = document.createElement('div');
+        clickBox.className = 'order-details-click';
+        clickBox.onclick = () => { cargarOrdenEnPantallaPrincipal(ord.id); };
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'order-name';
+        nameSpan.innerText = ord.cliente.trim() || 'Sin especificar';
+
+        const priceSpan = document.createElement('span');
+        priceSpan.className = 'order-price';
+        priceSpan.innerText = ord.montoTotalStr || 'Q 0.00';
+
+        clickBox.appendChild(nameSpan);
+        clickBox.appendChild(priceSpan);
+        li.appendChild(chk);
+        li.appendChild(clickBox);
+
+        li.addEventListener('contextmenu', (e) => { abrirMenuContextualPersonalizado(e, ord.id); });
+
+        if (ord.completada) {
+          listaCompletadas.appendChild(li);
+          completadasContador++;
+        } else {
+          listaActivas.appendChild(li);
+        }
+      });
+
+      countCompletadas.innerText = completadasContador;
+      btnPurge.style.display = completadasContador > 0 ? 'inline-block' : 'none';
+    }
+
+    function crearNuevaOrdenVacia() {
+      let nuevaOrd = generarObjetoOrdenEstructural();
+      poolOrdenes.push(nuevaOrd);
+      idOrdenFocalizada = nuevaOrd.id;
+      guardarEstadoEnLocalStorage();
+      renderizarListadosSidebar();
+      cargarOrdenEnPantallaPrincipal(idOrdenFocalizada);
+      mostrarToast("Nueva orden creada");
+    }
+
+    function cargarOrdenEnPantallaPrincipal(id) {
+      idOrdenFocalizada = id;
+      const ord = poolOrdenes.find(o => o.id === id);
+      if (!ord) return;
+
+      document.getElementById('cliente').value = ord.cliente;
+      document.getElementById('correo').value = ord.correo;
+      document.getElementById('telefono').value = ord.telefono;
+      document.getElementById('nit').value = ord.nit;
+      document.getElementById('fecha').value = ord.fecha;
+      document.getElementById('hora').value = ord.hora;
+      document.getElementById('observaciones-generales').value = ord.observaciones;
+
+      actualizarTitle(ord.cliente);
+
+      const contenedor = document.getElementById('piezas-contenedor');
+      contenedor.innerHTML = '';
+      seedIdPieza = 0;
+
+      let colorCanonico = obtenerColorCanonicoPorNombre(ord.cliente);
+      document.documentElement.style.setProperty('--client-neon-color', colorCanonico);
+
+      ord.piezas.forEach(pieza => {
+        agregarNuevoBloquePieza();
+        let uiBlock = contenedor.lastElementChild;
+        let pId = uiBlock.id.replace('block-pieza-', '');
+
+        uiBlock.querySelector('.p-tipo').value = pieza.tipo;
+        uiBlock.querySelector('.p-ancho').value = pieza.ancho;
+        uiBlock.querySelector('.p-alto').value = pieza.alto;
+        uiBlock.querySelector('.p-unidad').value = pieza.unidad;
+        uiBlock.querySelector('.p-archivo').value = pieza.archivo;
+        uiBlock.querySelector('.p-software').value = pieza.software;
+        uiBlock.querySelector('.p-soporte').value = pieza.soporte;
+        uiBlock.querySelector('.p-diseno').value = pieza.diseno;
+        uiBlock.querySelector('.p-reproduccion').value = pieza.reproduccion;
+        uiBlock.querySelector('.p-post-redaccion').value = pieza.post;
+        uiBlock.querySelector('.p-precio').value = pieza.precio;
+        uiBlock.querySelector('.p-cantidad').value = pieza.cantidad;
+        uiBlock.querySelector('.p-notas').value = pieza.notas;
+
+        if (pieza.color) {
+          let radio = uiBlock.querySelector(`input[name="color_${pId}"][value="${pieza.color}"]`);
+          if (radio) radio.checked = true;
+        }
+        
+        uiBlock.style.borderLeftColor = colorCanonico;
+      });
+
+      calcularMontoTotalGlobal();
+      guardarEstadoEnLocalStorage();
+      
+      document.querySelectorAll('.order-item').forEach(item => {
+        item.classList.toggle('active-ui', item.getAttribute('data-id') === id);
+      });
+    }
+
+    function actualizarFlujoOrdenActual() {
+      const ord = poolOrdenes.find(o => o.id === idOrdenFocalizada);
+      if (!ord) return;
+
+      ord.cliente = document.getElementById('cliente').value;
+      ord.correo = document.getElementById('correo').value;
+      ord.telefono = document.getElementById('telefono').value;
+      ord.nit = document.getElementById('nit').value;
+      ord.fecha = document.getElementById('fecha').value;
+      ord.hora = document.getElementById('hora').value;
+      ord.observaciones = document.getElementById('observaciones-generales').value;
+
+      actualizarTitle(ord.cliente);
+
+      let colorCanonico = obtenerColorCanonicoPorNombre(ord.cliente);
+      document.documentElement.style.setProperty('--client-neon-color', colorCanonico);
+
+      let piezasCompiladas = [];
+      const bloques = document.querySelectorAll('.pieza-block');
+
+      bloques.forEach(bloque => {
+        let pId = bloques_id = bloque.id.replace('block-pieza-', '');
+        let colorOpt = bloque.querySelector(`input[name="color_${pId}"]:checked`);
+        
+        bloque.style.borderLeftColor = colorCanonico;
+
+        piezasCompiladas.push({
+          tipo: bloque.querySelector('.p-tipo').value,
+          ancho: bloque.querySelector('.p-ancho').value,
+          alto: bloque.querySelector('.p-alto').value,
+          unidad: bloque.querySelector('.p-unidad').value,
+          archivo: bloque.querySelector('.p-archivo').value,
+          software: bloque.querySelector('.p-software').value,
+          soporte: bloque.querySelector('.p-soporte').value,
+          diseno: bloque.querySelector('.p-diseno').value,
+          reproduccion: bloque.querySelector('.p-reproduccion').value,
+          color: colorOpt ? colorOpt.value : 'Color T',
+          post: bloque.querySelector('.p-post-redaccion').value,
+          precio: bloque.querySelector('.p-precio').value,
+          cantidad: bloque.querySelector('.p-cantidad').value,
+          notas: bloque.querySelector('.p-notas').value
+        });
+      });
+
+      ord.piezas = piezasCompiladas;
+      calcularMontoTotalGlobal();
+      ord.montoTotalStr = document.getElementById('monto-total').value;
+
+      guardarEstadoEnLocalStorage();
+
+      const itemLateral = document.querySelector(`.order-item[data-id="${ord.id}"]`);
+      if (itemLateral) {
+        itemLateral.style.borderLeftColor = colorCanonico;
+        itemLateral.querySelector('.order-name').innerText = ord.cliente.trim() || 'Sin especificar';
+        itemLateral.querySelector('.order-price').innerText = ord.montoTotalStr;
+      }
+    }
+
+    function alternarEstadoCompletadoOrden(id, completadoStatus) {
+      const ord = poolOrdenes.find(o => o.id === id);
+      if (!ord) return;
+
+      ord.completada = completadoStatus;
+      guardarEstadoEnLocalStorage();
+      renderizarListadosSidebar();
+      mostrarToast("Orden archivada");
+    }
+
+    function configurarEventosMenuContextual() {
+      const menu = document.getElementById('context-menu');
+      document.addEventListener('click', () => { menu.style.display = 'none'; });
+    }
+
+    function abrirMenuContextualPersonalizado(e, id) {
+      e.preventDefault();
+      idOrdenContextualFoco = id;
+      const menu = document.getElementById('context-menu');
+      menu.style.top = `${e.pageY}px`;
+      menu.style.left = `${e.pageX}px`;
+      menu.style.display = 'block';
+    }
+
+    function eliminarOrdenContextual() {
+      if (!idOrdenContextualFoco) return;
+      if (poolOrdenes.length === 1) {
+        alert("El sistema requiere mantener al menos una orden activa.");
+        return;
+      }
+      if (confirm("¿Deseas eliminar permanentemente esta orden?")) {
+        poolOrdenes = poolOrdenes.filter(o => o.id !== idOrdenContextualFoco);
+        if (idOrdenFocalizada === idOrdenContextualFoco) {
+          idOrdenFocalizada = poolOrdenes[0].id;
+        }
+        guardarEstadoEnLocalStorage();
+        renderizarListadosSidebar();
+        cargarOrdenEnPantallaPrincipal(idOrdenFocalizada);
+        mostrarToast("Orden eliminada");
+      }
+      idOrdenContextualFoco = null;
+    }
+
+    function purgarTodasLasCompletadas() {
+      if (confirm("¿Eliminar permanentemente todas las órdenes completadas?")) {
+        const completadasIds = poolOrdenes.filter(o => o.completada).map(o => o.id);
+        poolOrdenes = poolOrdenes.filter(o => !o.completada);
+
+        if (poolOrdenes.length === 0) {
+          let ordInicial = generarObjetoOrdenEstructural();
+          poolOrdenes.push(ordInicial);
+          idOrdenFocalizada = ordInicial.id;
+        } else if (completadasIds.includes(idOrdenFocalizada)) {
+          idOrdenFocalizada = poolOrdenes[0].id;
+        }
+
+        guardarEstadoEnLocalStorage();
+        renderizarListadosSidebar();
+        cargarOrdenEnPantallaPrincipal(idOrdenFocalizada);
+        mostrarToast("Historial purgado");
+      }
+    }
+
+    function actualizarTitle(clienteStr) {
+      const title = document.getElementById('main-title');
+      title.innerText = clienteStr.trim() ? `Orden de ${clienteStr.trim()}` : "Orden";
     }
 
     function formatearTelefono(input) {
@@ -431,26 +919,29 @@
       div.className = 'pieza-block';
       div.id = `block-pieza-${seedIdPieza}`;
       
+      let clienteNombre = document.getElementById('cliente').value;
+      div.style.borderLeftColor = obtenerColorCanonicoPorNombre(clienteNombre);
+
       div.innerHTML = `
         <div class="pieza-block-header">
           <span class="pieza-title">Pieza</span>
-          <button type="button" class="btn-remove-pieza" onclick="removerBloquePieza(${seedIdPieza}); guardarDatosEnCache();">Eliminar</button>
+          <button type="button" class="btn-remove-pieza" onclick="removerBloquePieza(${seedIdPieza}); actualizarFlujoOrdenActual();">Eliminar</button>
         </div>
         
         <div class="row">
           <div class="row-label">Tipo de pieza</div>
-          <div class="row-value"><input type="text" class="p-tipo" placeholder="Tarjetas de presentación" oninput="guardarDatosEnCache();"></div>
+          <div class="row-value"><input type="text" class="p-tipo" placeholder="Tarjetas de presentación" oninput="actualizarFlujoOrdenActual();"></div>
         </div>
         
         <div class="row">
           <div class="row-label">Dimensiones del arte</div>
           <div class="row-value">
             <div class="dimension-container">
-              <input type="text" class="p-ancho" placeholder="X ancho" oninput="guardarDatosEnCache();">
+              <input type="text" class="p-ancho" placeholder="X ancho" oninput="actualizarFlujoOrdenActual();">
               <span class="dim-separator">×</span>
-              <input type="text" class="p-alto" placeholder="Y alto" oninput="guardarDatosEnCache();">
+              <input type="text" class="p-alto" placeholder="Y alto" oninput="actualizarFlujoOrdenActual();">
               <span class="dim-separator">/</span>
-              <select class="custom-select dim-select p-unidad" onchange="guardarDatosEnCache();">
+              <select class="custom-select dim-select p-unidad" onchange="actualizarFlujoOrdenActual();">
                 <option value="In" selected>In</option>
                 <option value="cm">cm</option>
                 <option value="mm">mm</option>
@@ -462,23 +953,23 @@
         
         <div class="row">
           <div class="row-label">Nombre del archivo</div>
-          <div class="row-value"><input type="text" class="p-archivo" placeholder="Tarjetas_chileras.pdf" oninput="guardarDatosEnCache();"></div>
+          <div class="row-value"><input type="text" class="p-archivo" placeholder="Tarjetas_chileras.pdf" oninput="actualizarFlujoOrdenActual();"></div>
         </div>
         
         <div class="row">
           <div class="row-label">Software utilizado</div>
-          <div class="row-value"><input type="text" class="p-software" placeholder="Canva" oninput="guardarDatosEnCache();"></div>
+          <div class="row-value"><input type="text" class="p-software" placeholder="Canva" oninput="actualizarFlujoOrdenActual();"></div>
         </div>
         
         <div class="row">
           <div class="row-label">Papel o material de soporte</div>
-          <div class="row-value"><input type="text" class="p-soporte" placeholder="Bond / Husky / Texcote / etc" oninput="guardarDatosEnCache();"></div>
+          <div class="row-value"><input type="text" class="p-soporte" placeholder="Bond / Husky / Texcote / etc" oninput="actualizarFlujoOrdenActual();"></div>
         </div>
 
         <div class="row">
           <div class="row-label">Nivel de diseño</div>
           <div class="row-value">
-            <select class="custom-select p-diseno" onchange="calcularMontoTotalGlobal(); guardarDatosEnCache();">
+            <select class="custom-select p-diseno" onchange="actualizarFlujoOrdenActual();">
               <option value="0" data-nombre="Ninguno">No requiere diseño adicional (Q 0)</option>
               <option value="25" data-nombre="DISEÑO STICKERS DE CUADERNOS O MONTAJES">DISEÑO STICKERS DE CUADERNOS O MONTAJES — Q 25</option>
               <option value="50" data-nombre="DISEÑO NIVEL 1">DISEÑO NIVEL 1 — Q 50</option>
@@ -491,17 +982,17 @@
 
         <div class="row">
           <div class="row-label">Sistema de reproducción sugerido</div>
-          <div class="row-value"><input type="text" class="p-reproduccion" placeholder="Acrobat" oninput="guardarDatosEnCache();"></div>
+          <div class="row-value"><input type="text" class="p-reproduccion" placeholder="Acrobat" oninput="actualizarFlujoOrdenActual();"></div>
         </div>
 
         <div class="row" style="align-items: flex-start; padding: 6px 0;">
           <div class="row-label">Modo de color</div>
           <div class="row-value">
-            <div class="color-grid">
-              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="Color T" checked onclick="guardarDatosEnCache();"> Color T</label>
-              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="Color T/R" onclick="guardarDatosEnCache();"> Color T/R</label>
-              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="B/N T" onclick="guardarDatosEnCache();"> B/N T</label>
-              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="B/N T/R" onclick="guardarDatosEnCache();"> B/N T/R</label>
+            <div class="color-flex">
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="Color T" checked onclick="actualizarFlujoOrdenActual();"> Color T</label>
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="Color T/R" onclick="actualizarFlujoOrdenActual();"> Color T/R</label>
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="B/N T" onclick="actualizarFlujoOrdenActual();"> B/N T</label>
+              <label class="option-item"><input type="radio" name="color_${seedIdPieza}" value="B/N T/R" onclick="actualizarFlujoOrdenActual();"> B/N T/R</label>
             </div>
           </div>
         </div>
@@ -509,7 +1000,7 @@
         <div class="row">
           <div class="row-label">Procesos post impresión</div>
           <div class="row-value">
-            <input type="text" class="p-post-redaccion" placeholder="Corte, semicorte, laminado, barniz, etc." oninput="guardarDatosEnCache();">
+            <input type="text" class="p-post-redaccion" placeholder="Corte, semicorte, laminado, barniz, etc." oninput="actualizarFlujoOrdenActual();">
           </div>
         </div>
 
@@ -518,35 +1009,31 @@
           <div class="row-value">
             <input type="text" class="p-precio" placeholder="Q 25.00" 
                    onfocus="limpiarMascaraPrecio(this)" 
-                   onblur="aplicarMascaraPrecio(this); guardarDatosEnCache();" 
+                   onblur="aplicarMascaraPrecio(this); actualizarFlujoOrdenActual();" 
                    oninput="calcularMontoTotalGlobal()">
           </div>
         </div>
 
         <div class="row">
           <div class="row-label">Cantidad de artes</div>
-          <div class="row-value"><input type="number" class="p-cantidad" placeholder="2" oninput="calcularMontoTotalGlobal(); guardarDatosEnCache();"></div>
+          <div class="row-value"><input type="number" class="p-cantidad" placeholder="2" oninput="actualizarFlujoOrdenActual();"></div>
         </div>
 
         <div class="row textarea-row">
           <div class="row-label">Notas de la pieza</div>
-          <div class="row-value"><textarea class="p-notas" rows="2" placeholder="Me gustaría que fuera como..." oninput="guardarDatosEnCache();"></textarea></div>
+          <div class="row-value"><textarea class="p-notas" rows="2" placeholder="Me gustaría que fuera como..." oninput="actualizarFlujoOrdenActual();"></textarea></div>
         </div>
       `;
       contenedor.appendChild(div);
       reordenarNumeracionVisual();
-      calcularMontoTotalGlobal();
     }
 
     function removerBloquePieza(id) {
       const bloques = document.querySelectorAll('.pieza-block');
       if (bloques.length > 1) {
         const bloque = document.getElementById(`block-pieza-${id}`);
-        if (bloque) {
-          bloque.remove();
-          reordenarNumeracionVisual();
-          calcularMontoTotalGlobal();
-        }
+        if (bloque) bloque.remove();
+        reordenarNumeracionVisual();
       }
     }
 
@@ -564,143 +1051,6 @@
       });
     }
 
-    function limpiarMascaraPrecio(input) {
-      let valor = input.value.replace(/[^\d.]/g, '');
-      input.value = valor ? parseFloat(valor) : '';
-    }
-
-    function aplicarMascaraPrecio(input) {
-      let valor = parseFloat(input.value);
-      if (!isNaN(valor)) {
-        input.value = `Q ${valor.toFixed(2)}`;
-      } else {
-        input.value = '';
-      }
-    }
-
-    function calcularMontoTotalGlobal() {
-      let sumaTotal = 0;
-      const bloques = document.querySelectorAll('.pieza-block');
-      
-      bloques.forEach(bloque => {
-        const precioRaw = bloque.querySelector('.p-precio').value.replace(/[^\d.]/g, '');
-        const precioUnitario = parseFloat(precioRaw) || 0;
-        const cantidad = parseInt(bloque.querySelector('.p-cantidad').value) || 1;
-        const costoDiseno = parseFloat(bloque.querySelector('.p-diseno').value) || 0;
-        
-        sumaTotal += (precioUnitario * cantidad) + costoDiseno;
-      });
-      
-      document.getElementById('monto-total').value = `Q ${sumaTotal.toFixed(2)}`;
-    }
-
-    // 💾 ALGORITMO LÓGICO DE GUARDADO EN MEMORIA LOCAL CACHÉ
-    function guardarDatosEnCache() {
-      localStorage.setItem("orden_cache_guardado", "true");
-      localStorage.setItem("cache_cliente", document.getElementById('cliente').value);
-      localStorage.setItem("cache_correo", document.getElementById('correo').value);
-      localStorage.setItem("cache_telefono", document.getElementById('telefono').value);
-      localStorage.setItem("cache_nit", document.getElementById('nit').value);
-      localStorage.setItem("cache_fecha", document.getElementById('fecha').value);
-      localStorage.setItem("cache_hora", document.getElementById('hora').value);
-      localStorage.setItem("cache_observaciones", document.getElementById('observaciones-generales').value);
-
-      // Guardar matriz estructurada de piezas independientes
-      let matrizPiezas = [];
-      const bloques = document.querySelectorAll('.pieza-block');
-      bloques.forEach(bloque => {
-        const blockId = bloque.id.replace('block-pieza-', '');
-        const colorOpt = bloque.querySelector(`input[name="color_${blockId}"]:checked`);
-        
-        matrizPiezas.push({
-          tipo: bloque.querySelector('.p-tipo').value,
-          ancho: bloque.querySelector('.p-ancho').value,
-          alto: bloque.querySelector('.p-alto').value,
-          unidad: bloque.querySelector('.p-unidad').value,
-          archivo: bloque.querySelector('.p-archivo').value,
-          software: bloque.querySelector('.p-software').value,
-          soporte: bloque.querySelector('.p-soporte').value,
-          diseno: bloque.querySelector('.p-diseno').value,
-          reproduccion: bloque.querySelector('.p-reproduccion').value,
-          color: colorOpt ? colorOpt.value : 'Color T',
-          post: bloque.querySelector('.p-post-redaccion').value,
-          precio: bloque.querySelector('.p-precio').value,
-          cantidad: bloque.querySelector('.p-cantidad').value,
-          notas: bloque.querySelector('.p-notas').value
-        });
-      });
-      localStorage.setItem("cache_matriz_piezas", JSON.stringify(matrizPiezas));
-    }
-
-    // ⏳ ALGORITMO LÓGICO DE RESTAURACIÓN DE CACHÉ TRAS CIERRES ACCIDENTALES
-    function cargarDatosDesdeCache() {
-      document.getElementById('cliente').value = localStorage.getItem("cache_cliente") || '';
-      document.getElementById('correo').value = localStorage.getItem("cache_correo") || '';
-      document.getElementById('telefono').value = localStorage.getItem("cache_telefono") || '';
-      document.getElementById('nit').value = localStorage.getItem("cache_nit") || '';
-      document.getElementById('fecha').value = localStorage.getItem("cache_fecha") || '';
-      document.getElementById('hora').value = localStorage.getItem("cache_hora") || '';
-      document.getElementById('observaciones-generales').value = localStorage.getItem("cache_observaciones") || '';
-      
-      actualizarTituloDinamico();
-
-      const contenedor = document.getElementById('piezas-contenedor');
-      contenedor.innerHTML = ''; // Limpiar nodos vacíos de inicio
-      seedIdPieza = 0;
-
-      const piezasArray = JSON.parse(localStorage.getItem("cache_matriz_piezas")) || [];
-      piezasArray.forEach(data => {
-        agregarNuevoBloquePieza();
-        let uiBlock = contenedor.lastElementChild;
-        const currentSeedId = uiBlock.id.replace('block-pieza-', '');
-
-        uiBlock.querySelector('.p-tipo').value = data.tipo || '';
-        uiBlock.querySelector('.p-ancho').value = data.ancho || '';
-        uiBlock.querySelector('.p-alto').value = data.alto || '';
-        uiBlock.querySelector('.p-unidad').value = data.unidad || 'In';
-        uiBlock.querySelector('.p-archivo').value = data.archivo || '';
-        uiBlock.querySelector('.p-software').value = data.software || '';
-        uiBlock.querySelector('.p-soporte').value = data.soporte || '';
-        uiBlock.querySelector('.p-diseno').value = data.diseno || '0';
-        uiBlock.querySelector('.p-reproduccion').value = data.reproduccion || '';
-        uiBlock.querySelector('.p-post-redaccion').value = data.post || '';
-        uiBlock.querySelector('.p-precio').value = data.precio || '';
-        uiBlock.querySelector('.p-cantidad').value = data.cantidad || '';
-        uiBlock.querySelector('.p-notas').value = data.notas || '';
-
-        if (data.color) {
-          let radioTarget = uiBlock.querySelector(`input[name="color_${currentSeedId}"][value="${data.color}"]`);
-          if (radioTarget) radioTarget.checked = true;
-        }
-      });
-
-      calcularMontoTotalGlobal();
-    }
-
-    // EL BOTÓN ELIMINAR DATOS ES EL ÚNICO FACULTADO PARA BORRAR EL LOCALSTORAGE
-    function eliminarTodosLosDatos() {
-      if (confirm("¿Estás seguro de que deseas eliminar todos los datos ingresados en la orden?")) {
-        localStorage.clear(); // Destruye por completo la persistencia del caché local
-
-        document.getElementById('cliente').value = '';
-        document.getElementById('correo').value = '';
-        document.getElementById('telefono').value = '';
-        actualizarTituloDinamico();
-
-        document.getElementById('nit').value = '';
-        document.getElementById('fecha').value = '';
-        document.getElementById('hora').value = '';
-        document.getElementById('observaciones-generales').value = '';
-
-        const contenedor = document.getElementById('piezas-contenedor');
-        contenedor.innerHTML = ''; 
-        seedIdPieza = 0;           
-        agregarNuevoBloquePieza(); 
-
-        mostrarToast("¡Todos los datos e historial de caché han sido eliminados!");
-      }
-    }
-
     function extraerEstructuraCompleta() {
       const cliente = document.getElementById('cliente').value.trim() || 'Sin especificar';
       const correo = document.getElementById('correo').value.trim() || 'sin especificar';
@@ -710,7 +1060,6 @@
       const bloques = document.querySelectorAll('.pieza-block');
       bloques.forEach((bloque, index) => {
         const tipo = bloque.querySelector('.p-tipo').value.trim() || 'Sin especificar';
-        
         const anchoVal = bloque.querySelector('.p-ancho').value.trim();
         const altoVal = bloque.querySelector('.p-alto').value.trim();
         const unidad = bloque.querySelector('.p-unidad').value;
@@ -729,35 +1078,24 @@
         const colorOpt = bloque.querySelector(`input[name="color_${blockId}"]:checked`);
         const color = colorOpt ? colorOpt.value : 'Color T';
 
-        const postImpresionVal = bloque.querySelector('.p-post-redaccion').value.trim() || 'sin especificar';
+        const postRaw = bloque.querySelector('.p-post-redaccion').value.trim();
+        const postImpresionVal = (postRaw === "" || postRaw.includes("Corte, semicorte")) ? null : postRaw;
 
         const precioRaw = bloque.querySelector('.p-precio').value.replace(/[^\d.]/g, '');
         const precioVal = precioRaw ? `Q ${parseFloat(precioRaw).toFixed(2)}` : 'sin especificar';
         
         const cantidadRaw = bloque.querySelector('.p-cantidad').value;
         const cantidadVal = cantidadRaw ? `${parseInt(cantidadRaw)} artes` : 'sin especificar';
-
         const notas = bloque.querySelector('.p-notas').value.trim();
 
         listaPiezas.push({
-          num: index + 1,
-          tipo,
-          dimensiones,
-          archivo,
-          software,
-          soporte,
-          reproduccion,
-          color,
-          postImpresion: postImpresionVal,
-          precio: precioVal,
-          cantidad: cantidadVal,
-          notas
+          num: index + 1, tipo, dimensiones, archivo, software, soporte, reproduccion, color,
+          postImpresion: postImpresionVal, precio: precioVal, cantidad: cantidadVal, notas
         });
       });
 
       return {
-        cliente, correo, telefono,
-        piezas: listaPiezas,
+        cliente, correo, telefono, piezas: listaPiezas,
         montoTotal: document.getElementById('monto-total').value || 'Q 0.00',
         nit: document.getElementById('nit').value.trim() || 'sin especificar',
         fecha: document.getElementById('fecha').value.trim() || 'sin especificar',
@@ -769,38 +1107,67 @@
     async function copiarConFormato() {
       const d = extraerEstructuraCompleta();
       let piezasHTML = '';
+      
+      let textoPlanoRespaldo = `Orden de ${d.cliente}\n` +
+                               `Correo del que se envía: ${d.correo}\n` +
+                               `Teléfono: ${d.telefono}\n\n` +
+                               `--- ESPECIFICACIONES POR PIEZA ---\n`;
+
+      let colorCanonicoCliente = obtenerColorCanonicoPorNombre(d.cliente);
+
       d.piezas.forEach(p => {
-        let notasHTML = p.notas ? `<p style="margin: 2px 0; padding-left: 10px; color:#666; font-size: medium;"><strong>Notas de la pieza:</strong> <em>${p.notas}</em></p>` : '';
-        
+        let notasHTML = p.notas ? `<p style="margin: 2px 0; padding-left: 10px; color:#666666; font-size: medium;"><strong>Notas de la pieza:</strong> <em>${p.notas}</em></p>` : '';
+        let lineaPostHTML = p.postImpresion ? `<p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Procesos post impresión:</strong> ${p.postImpresion}</p>` : '';
+
         piezasHTML += `
-          <div style="margin-top: 15px; padding: 12px; border-left: 3px solid #ff4081; background-color: #fafafa; font-size: medium;">
-            <p style="margin: 2px 0; color: #ff4081; font-size: large;"><strong>— Pieza #${p.num}: ${p.tipo}</strong></p>
+          <div style="margin-top: 15px; padding: 12px; border-left: 3px solid ${colorCanonicoCliente}; background-color: #fafafa; font-size: medium;">
+            <p style="margin: 2px 0; color: ${colorCanonicoCliente}; font-size: large;"><strong>— Pieza #${p.num}: ${p.tipo}</strong></p>
             <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Dimensiones del arte:</strong> ${p.dimensiones}</p>
             <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Nombre del archivo:</strong> ${p.archivo}</p>
             <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Software utilizado:</strong> ${p.software}</p>
             <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Papel / Soporte:</strong> ${p.soporte}</p>
             <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Sistema de reproducción:</strong> ${p.reproduccion}</p>
             <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Modo de color:</strong> ${p.color}</p>
-            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Procesos post impresión:</strong> ${p.postImpresion}</p>
-            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Precio unitario por arte:</strong> ${p.precio} | <strong>Cantidad de artes:</strong> ${p.cantidad}</p>
+            ${lineaPostHTML}
+            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Precio unitario por arte:</strong> ${p.precio}</p>
+            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Cantidad de artes:</strong> ${p.cantidad}</p>
             ${notasHTML}
           </div>
         `;
+
+        textoPlanoRespaldo += `\n— Pieza #${p.num}: ${p.tipo}\n` +
+                              `  Dimensiones del arte: ${p.dimensiones}\n` +
+                              `  Nombre del archivo: ${p.archivo}\n` +
+                              `  Software utilizado: ${p.software}\n` +
+                              `  Papel / Soporte: ${p.soporte}\n` +
+                              `  Sistema de reproducción: ${p.reproduccion}\n` +
+                              `  Modo de color: ${p.color}\n` +
+                              (p.postImpresion ? `  Procesos post impresión: ${p.postImpresion}\n` : '') +
+                              `  Precio unitario por arte: ${p.precio}\n` +
+                              `  Cantidad de artes: ${p.cantidad}\n` +
+                              (p.notas ? `  Notas de la pieza: ${p.notas}\n` : '');
       });
 
       let obsGeneralesHTML = d.observacionesGenerales ? `<p style="margin: 4px 0; font-size: medium;"><strong>Observaciones generales:</strong> <em>${d.observacionesGenerales}</em></p>` : '';
 
+      textoPlanoRespaldo += `\n--- DATOS DE ENTREGA ---\n` +
+                            `Monto total de orden: ${d.montoTotal}\n` +
+                            `Nit: ${d.nit}\n` +
+                            `Fecha de entrega: ${d.fecha}\n` +
+                            `Hora de entrega: ${d.hora}\n` +
+                            (d.observacionesGenerales ? `Observaciones generales: ${d.observacionesGenerales}\n` : '');
+
       const htmlString = `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; font-size: medium;">
-          <h3 style="color: #ff4081; margin-top: 0; margin-bottom: 16px; font-size: large;"><strong>Orden de ${d.cliente}</strong></h3>
+          <h3 style="color: ${colorCanonicoCliente}; margin-top: 0; margin-bottom: 16px; font-size: large;"><strong>Orden de ${d.cliente}</strong></h3>
           <p style="margin: 4px 0; font-size: medium;"><strong>Correo del que se envía:</strong> ${d.correo}</p>
           <p style="margin: 4px 0; font-size: medium;"><strong>Teléfono:</strong> ${d.telefono}</p>
           
-          <h4 style="margin-top: 25px; margin-bottom: 10px; color: #000; border-bottom: 2px solid #ccc; padding-bottom: 4px; text-transform: uppercase; font-size: large;">Especificaciones por Pieza</h4>
+          <h4 style="margin-top: 25px; margin-bottom: 10px; color: #000000; border-bottom: 2px solid #cccccc; padding-bottom: 4px; text-transform: uppercase; font-size: large;">Especificaciones por Pieza</h4>
           ${piezasHTML}
           
-          <h4 style="margin-top: 25px; margin-bottom: 10px; color: #000; border-bottom: 2px solid #ccc; padding-bottom: 4px; text-transform: uppercase; font-size: large;">Datos de Entrega</h4>
-          <p style="margin: 4px 0; font-size: medium;"><strong>Monto total de orden:</strong> <span style="color:#ff4081;"><strong>${d.montoTotal}</strong></span></p>
+          <h4 style="margin-top: 25px; margin-bottom: 10px; color: #000000; border-bottom: 2px solid #cccccc; padding-bottom: 4px; text-transform: uppercase; font-size: large;">Datos de Entrega</h4>
+          <p style="margin: 4px 0; font-size: medium;"><strong>Monto total de orden:</strong> <span style="color: ${colorCanonicoCliente};"><strong>${d.montoTotal}</strong></span></p>
           <p style="margin: 4px 0; font-size: medium;"><strong>Nit:</strong> ${d.nit}</p>
           <p style="margin: 4px 0; font-size: medium;"><strong>Fecha de entrega:</strong> ${d.fecha}</p>
           <p style="margin: 4px 0; font-size: medium;"><strong>Hora de entrega:</strong> ${d.hora}</p>
@@ -810,10 +1177,10 @@
 
       try {
         const blobHTML = new Blob([htmlString], { type: "text/html" });
-        const blobText = new Blob([htmlString.replace(/<[^>]*>/g, '')], { type: "text/plain" });
+        const blobText = new Blob([textoPlanoRespaldo], { type: "text/plain" }); 
         const dataItem = new ClipboardItem({ "text/html": blobHTML, "text/plain": blobText });
         await navigator.clipboard.write([dataItem]);
-        mostrarToast("¡Orden copiada para Gmail!");
+        mostrarToast("¡Orden copiada con formato y líneas separadas!");
       } catch (err) {
         console.error(err);
         mostrarToast("Error al copiar");
@@ -825,6 +1192,7 @@
       let piezasWA = '';
       d.piezas.forEach(p => {
         let notaLineaWA = p.notas ? `   • *Notas de la pieza:* _${p.notas}_\n` : '';
+        let lineaPostWA = p.postImpresion ? `   • *Post impresión:* ${p.postImpresion}\n` : '';
 
         piezasWA += `\n*${p.num}. ${p.tipo}*\n` +
                     `   • *Dimensiones del arte:* ${p.dimensiones}\n` +
@@ -833,9 +1201,10 @@
                     `   • *Soporte:* ${p.soporte}\n` +
                     `   • *Reproducción:* ${p.reproduccion}\n` +
                     `   • *Color:* ${p.color}\n` +
-                    `   • *Post impresión:* ${p.postImpresion}\n` +
-                    `   • *Precio por arte:* ${p.precio} x ${p.cantidad}\n` +
-                    `${notaLineaWA}`;
+                    lineaPostWA +
+                    `   • *Precio por arte:* ${p.precio}\n` +
+                    `   • *Cantidad de artes:* ${p.cantidad}\n` +
+                    notaLineaWA;
       });
 
       let obsGeneralesWA = d.observacionesGenerales ? `\n*Observaciones generales:* ${d.observacionesGenerales}` : '';
