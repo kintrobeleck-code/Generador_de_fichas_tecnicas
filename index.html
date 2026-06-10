@@ -413,6 +413,41 @@
 
     .row.textarea-row { align-items: flex-start; }
 
+    .logo-puntos {
+      display: grid;
+      grid-template-columns: repeat(2, auto);
+      justify-content: center;
+      gap: 14px 16px;
+      margin: 8px 0 38px;
+      transition: transform 0.35s ease, opacity 0.35s ease;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .logo-punto {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff4fcf, #f000b8);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08), 0 0 14px rgba(240, 0, 184, 0.45);
+      animation: logoPulse 2.1s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    .logo-punto:nth-child(2) { animation-delay: 0.18s; }
+    .logo-punto:nth-child(3) { animation-delay: 0.35s; }
+    .logo-punto:nth-child(4) { animation-delay: 0.52s; }
+
+    @keyframes logoPulse {
+      0%, 100% { transform: scale(1); opacity: 0.95; }
+      50% { transform: scale(1.12); opacity: 1; }
+    }
+
+    .logo-puntos.is-hidden {
+      transform: translateY(-18px) scale(0.75);
+      opacity: 0;
+    }
+
     .btn-container {
       display: flex;
       gap: 15px;
@@ -507,6 +542,13 @@
     <li class="context-menu-item" onclick="eliminarOrdenContextual()">Eliminar Orden</li>
   </ul>
 
+  <div class="logo-puntos" id="logo-puntos" aria-hidden="true">
+    <span class="logo-punto"></span>
+    <span class="logo-punto"></span>
+    <span class="logo-punto"></span>
+    <span class="logo-punto"></span>
+  </div>
+
   <div class="container">
     <h2 id="main-title" class="main-order-title">Orden</h2>
     
@@ -515,7 +557,7 @@
     <div class="row">
       <div class="row-label">Nombre del cliente</div>
       <div class="row-value">
-        <input type="text" id="cliente" placeholder="Juanito" oninput="document.documentElement.style.setProperty('--client-neon-color', obtenerColorCanonicoPorNombre(this.value)); actualizarFlujoOrdenActual();">
+        <input type="text" id="cliente" placeholder="Juanito" oninput="document.documentElement.style.setProperty('--client-neon-color', obtenerColorCanonicoPorNombre(this.value, colorSeedActual)); actualizarFlujoOrdenActual();">
       </div>
     </div>
     
@@ -581,6 +623,7 @@
     let idOrdenFocalizada = null;
     let seedIdPieza = 0;
     let idOrdenContextualFoco = null;
+    let colorSeedActual = null;
 
     const paletaCanonicosContraste = [
       "#00FF66", "#00F0FF", "#FF6600", "#CC00FF", "#FF4D91", "#7C3AED", "#22D3EE"
@@ -589,7 +632,15 @@
     document.addEventListener("DOMContentLoaded", () => {
       inicializarBaseDeDatos();
       configurarEventosMenuContextual();
+      actualizarAnimacionLogo();
+      window.addEventListener('scroll', actualizarAnimacionLogo, { passive: true });
     });
+
+    function actualizarAnimacionLogo() {
+      const logoPuntos = document.getElementById('logo-puntos');
+      if (!logoPuntos) return;
+      logoPuntos.classList.toggle('is-hidden', window.scrollY > 50);
+    }
 
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
@@ -605,13 +656,24 @@
       arrow.innerText = lista.classList.contains('show') ? "▼" : "▶";
     }
 
-    function obtenerColorCanonicoPorNombre(nombre) {
-      if (!nombre || nombre.trim() === "") return "#00FF66"; 
+    function obtenerSemillaDesdeValor(valor) {
       let hash = 0;
-      for (let i = 0; i < nombre.length; i++) {
-        hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
+      const texto = String(valor || "");
+      for (let i = 0; i < texto.length; i++) {
+        hash = texto.charCodeAt(i) + ((hash << 5) - hash);
       }
-      let index = Math.abs(hash) % paletaCanonicosContraste.length;
+      return Math.abs(hash);
+    }
+
+    function obtenerColorCanonicoPorNombre(nombre, semilla = null) {
+      if (!nombre || nombre.trim() === "") {
+        const seedBase = semilla !== null && semilla !== undefined
+          ? obtenerSemillaDesdeValor(String(semilla))
+          : Math.floor(Math.random() * 1000000);
+        return paletaCanonicosContraste[seedBase % paletaCanonicosContraste.length];
+      }
+
+      const index = obtenerSemillaDesdeValor(nombre) % paletaCanonicosContraste.length;
       return paletaCanonicosContraste[index];
     }
 
@@ -639,6 +701,7 @@
     function generarObjetoOrdenEstructural() {
       return {
         id: "ord_" + Date.now() + Math.random().toString(36).substr(2, 4),
+        colorSeed: Math.random().toString(36).slice(2),
         cliente: "", correo: "", telefono: "", nit: "", fecha: "", hora: "", observaciones: "",
         completada: false,
         montoTotalStr: "Q 0.00",
@@ -670,7 +733,7 @@
         li.className = `order-item ${ord.id === idOrdenFocalizada ? 'active-ui' : ''}`;
         li.setAttribute('data-id', ord.id);
         
-        li.style.borderLeftColor = obtenerColorCanonicoPorNombre(ord.cliente);
+        li.style.borderLeftColor = obtenerColorCanonicoPorNombre(ord.cliente, ord.colorSeed || ord.id);
 
         const chk = document.createElement('input');
         chk.type = 'checkbox';
@@ -741,7 +804,8 @@
       contenedor.innerHTML = '';
       seedIdPieza = 0;
 
-      let colorCanonico = obtenerColorCanonicoPorNombre(ord.cliente);
+      colorSeedActual = ord.colorSeed || ord.id;
+      let colorCanonico = obtenerColorCanonicoPorNombre(ord.cliente, colorSeedActual);
       document.documentElement.style.setProperty('--client-neon-color', colorCanonico);
 
       ord.piezas.forEach(pieza => {
@@ -793,7 +857,8 @@
 
       actualizarTitle(ord.cliente);
 
-      let colorCanonico = obtenerColorCanonicoPorNombre(ord.cliente);
+      colorSeedActual = ord.colorSeed || ord.id;
+      let colorCanonico = obtenerColorCanonicoPorNombre(ord.cliente, colorSeedActual);
       document.documentElement.style.setProperty('--client-neon-color', colorCanonico);
 
       let piezasCompiladas = [];
@@ -920,7 +985,7 @@
       div.id = `block-pieza-${seedIdPieza}`;
       
       let clienteNombre = document.getElementById('cliente').value;
-      div.style.borderLeftColor = obtenerColorCanonicoPorNombre(clienteNombre);
+      div.style.borderLeftColor = obtenerColorCanonicoPorNombre(clienteNombre, colorSeedActual || null);
 
       div.innerHTML = `
         <div class="pieza-block-header">
