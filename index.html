@@ -2008,17 +2008,38 @@
 
     function fillFromParsed(d) {
       if (!d) return;
-      if (d.cliente) document.getElementById('cliente').value = d.cliente;
-      if (d.correo) document.getElementById('correo').value = d.correo;
-      if (d.telefono) document.getElementById('telefono').value = d.telefono;
-      if (d.asesor) document.getElementById('asesor').value = d.asesor;
-      if (d.nit) document.getElementById('nit').value = d.nit;
-      if (d.ticket) document.getElementById('ticket').value = d.ticket;
-      if (d.direccionEntrega) document.getElementById('direccion-entrega').value = d.direccionEntrega;
-      if (d.fecha) document.getElementById('fecha').value = d.fecha;
-      if (d.hora) document.getElementById('hora').value = d.hora;
-      if (d.observacionesGenerales) document.getElementById('observaciones-generales').value = d.observacionesGenerales;
-      if (d.montoTotal) document.getElementById('monto-total').value = d.montoTotal;
+      function sanitizeParsedString(s) {
+        if (!s && s !== 0) return '';
+        let t = String(s).replace(/[*_~`]/g, '').trim();
+        if (!t) return '';
+        // ignorar formas como 'sin especificar' o frases de referencia
+        if (/^\*?\s*sin\s+especificar\s*\*?$/i.test(t)) return '';
+        if (/^sin especificar/i.test(t)) return '';
+        return t;
+      }
+
+      const clienteVal = sanitizeParsedString(d.cliente);
+      if (clienteVal) document.getElementById('cliente').value = clienteVal;
+      const correoVal = sanitizeParsedString(d.correo);
+      if (correoVal) document.getElementById('correo').value = correoVal;
+      const telefonoVal = sanitizeParsedString(d.telefono);
+      if (telefonoVal) document.getElementById('telefono').value = telefonoVal;
+      const asesorVal = sanitizeParsedString(d.asesor);
+      if (asesorVal) document.getElementById('asesor').value = asesorVal;
+      const nitVal = sanitizeParsedString(d.nit);
+      if (nitVal) document.getElementById('nit').value = nitVal;
+      const ticketVal = sanitizeParsedString(d.ticket);
+      if (ticketVal) document.getElementById('ticket').value = ticketVal;
+      const direccionVal = sanitizeParsedString(d.direccionEntrega);
+      if (direccionVal) document.getElementById('direccion-entrega').value = direccionVal;
+      const fechaVal = sanitizeParsedString(d.fecha);
+      if (fechaVal) document.getElementById('fecha').value = fechaVal;
+      const horaVal = sanitizeParsedString(d.hora);
+      if (horaVal) document.getElementById('hora').value = horaVal;
+      const obsVal = sanitizeParsedString(d.observacionesGenerales);
+      if (obsVal) document.getElementById('observaciones-generales').value = obsVal;
+      const montoVal = sanitizeParsedString(d.montoTotal);
+      if (montoVal) document.getElementById('monto-total').value = montoVal;
 
       // Reemplazar piezas existentes por las del portapapeles
       const cont = document.getElementById('piezas-contenedor');
@@ -2030,8 +2051,10 @@
           agregarNuevoBloquePieza();
           const uiBlock = cont.lastElementChild;
           if (!uiBlock) return;
-          if (p.tipo) uiBlock.querySelector('.p-tipo').value = p.tipo;
-          if (p.dimensiones) {
+          const tipoVal = sanitizeParsedString(p.tipo);
+          if (tipoVal) uiBlock.querySelector('.p-tipo').value = tipoVal;
+          const dimensionesRaw = sanitizeParsedString(p.dimensiones);
+          if (dimensionesRaw) {
               // intentar separar dimensiones en 'ancho × alto' y unidad (por ejemplo: '5.5 × 8.5 In')
               const dimMatch = p.dimensiones.match(/\s*([0-9.,]+)\s*[×xX]\s*([0-9.,]+)\s*(\w+)?/i);
               if (dimMatch) {
@@ -2054,10 +2077,14 @@
                 }
               }
             }
-          if (p.archivo) uiBlock.querySelector('.p-archivo').value = p.archivo;
-          if (p.software) uiBlock.querySelector('.p-software').value = p.software;
-          if (p.soporte) uiBlock.querySelector('.p-soporte').value = p.soporte;
-          if (p.postImpresion) uiBlock.querySelector('.p-post-redaccion').value = p.postImpresion;
+          const archivoVal = sanitizeParsedString(p.archivo);
+          if (archivoVal) uiBlock.querySelector('.p-archivo').value = archivoVal;
+          const softwareVal = sanitizeParsedString(p.software);
+          if (softwareVal) uiBlock.querySelector('.p-software').value = softwareVal;
+          const soporteVal = sanitizeParsedString(p.soporte);
+          if (soporteVal) uiBlock.querySelector('.p-soporte').value = soporteVal;
+          const postVal = sanitizeParsedString(p.postImpresion);
+          if (postVal) uiBlock.querySelector('.p-post-redaccion').value = postVal;
           if (p.precio) {
               const precioInput = uiBlock.querySelector('.p-precio');
               // normalizar precio a formato 'Q X.XX'
@@ -2070,10 +2097,12 @@
               }
           }
           if (p.cantidad) {
-              const cant = String(p.cantidad).replace(/[^0-9]/g, '');
-              uiBlock.querySelector('.p-cantidad').value = cant || p.cantidad;
+              const cantRaw = sanitizeParsedString(p.cantidad);
+              const cant = String(cantRaw).replace(/[^0-9]/g, '');
+              if (cant) uiBlock.querySelector('.p-cantidad').value = cant;
           }
-          if (p.notas) uiBlock.querySelector('.p-notas').value = p.notas;
+          const notasVal = sanitizeParsedString(p.notas);
+          if (notasVal) uiBlock.querySelector('.p-notas').value = notasVal;
           if (p.color) {
               const radios = uiBlock.querySelectorAll('input[type="radio"]');
               if (radios && radios.length) {
