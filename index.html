@@ -1761,6 +1761,10 @@
             .no-break { page-break-inside: avoid; }
             .letter .pieces-grid { display: flex; flex-wrap: wrap; gap: 12px; }
             .letter .piece { width: calc(50% - 6px); box-sizing: border-box; }
+              /* Para rollos (no .letter): mostrar el label (strong) en su propia línea
+                 y dejar el contenido debajo, respetando los dos puntos ':' */
+              body:not(.letter) .field strong { display: block; margin-bottom: 4px; }
+              body:not(.letter) .field { margin-left: 0; }
           </style>
         </head>
         <body class="${sizeValue === 'letter' ? 'letter' : ''}">
