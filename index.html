@@ -547,15 +547,25 @@
         flex: 1 1 100%;
       }
       .btn-print-group {
-        flex-direction: column;
+        flex-direction: row;
+        align-items: stretch;
       }
       .btn-print {
-        border-right: none;
-        border-bottom: 1px solid #000000;
+        flex: 1 1 0%;
+        min-width: 0;
+        white-space: normal;
+        word-break: break-word;
+        text-align: left;
+        border-right: 1px solid #000000;
+        border-bottom: none;
       }
       .btn-print:hover {
-        border-right: none;
-        border-bottom-color: #334155;
+        border-bottom: none;
+        border-right-color: #334155;
+      }
+      .btn-print-select {
+        width: 44px;
+        min-width: 44px;
       }
     }
 
