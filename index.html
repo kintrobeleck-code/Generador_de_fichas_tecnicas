@@ -770,7 +770,7 @@
   <div class="btn-container">
     <div class="btn-print-group">
       <button id="btn-print-action" class="btn-action btn-print" onclick="imprimirFicha()">Imprimir ficha (Hoja carta)</button>
-      <select id="print-size-select" class="btn-print-select" onchange="actualizarTextoBotonImpresion()" aria-label="Seleccionar tamaño de impresión">
+      <select id="print-size-select" class="btn-print-select" onchange="actualizarTextoBotonImpresion(); actualizarFlujoOrdenActual();" aria-label="Seleccionar tamaño de impresión">
         <option value="letter">Hoja carta</option>
         <option value="72mm">Rollo 72mm</option>
         <option value="48mm">Rollo 48mm</option>
@@ -900,6 +900,7 @@
         cliente: "", correo: "", telefono: "", asesor: "", nit: "", ticket: "", direccionEntrega: "", fecha: "", hora: "", observaciones: "",
         completada: false,
         montoTotalStr: "Q 0.00",
+        printSize: "letter",
         piezas: [{
           tipo: "", ancho: "", alto: "", unidad: "In", archivo: "", software: "", soporte: "",
           diseno: "0", reproduccion: "", color: "Color T", post: "", precio: "", cantidad: "", notas: ""
@@ -1068,6 +1069,8 @@
       document.getElementById('fecha').value = ord.fecha;
       document.getElementById('hora').value = ord.hora;
       document.getElementById('observaciones-generales').value = ord.observaciones;
+      document.getElementById('print-size-select').value = ord.printSize || 'letter';
+      actualizarTextoBotonImpresion();
 
       actualizarTitle(ord.cliente);
 
@@ -1163,6 +1166,7 @@
       });
 
       ord.piezas = piezasCompiladas;
+      ord.printSize = document.getElementById('print-size-select').value;
       calcularMontoTotalGlobal();
       ord.montoTotalStr = document.getElementById('monto-total').value;
 
