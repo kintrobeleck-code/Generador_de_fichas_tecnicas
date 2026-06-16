@@ -149,6 +149,8 @@
     }
     .order-item:hover { background-color: #edf2f7; transform: translateX(-2px); }
     .order-item.active-ui { background-color: #e2e8f0; border-color: #cbd5e0; }
+    .order-item.dragging { opacity: 0.5; }
+    .order-item.drag-over { background-color: #e6f2ff; border-color: #a0c4ff; }
 
     .order-checkbox {
       margin-right: 12px;
@@ -440,14 +442,35 @@
 
     .btn-container {
       display: flex;
+      flex-wrap: wrap;
       gap: 15px;
       margin-top: 35px;
       width: 100%;
       max-width: 620px;
     }
 
+    .btn-print-group {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #000000;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .btn-copy-group {
+      display: flex;
+      gap: 15px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
     .btn-action {
-      flex: 1;
+      flex: 1 1 calc(50% - 7.5px);
+      min-width: 180px;
       padding: 14px;
       border: none;
       border-radius: 4px;
@@ -457,6 +480,83 @@
       text-transform: uppercase;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
       transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    }
+
+    .btn-copy-group .btn-action {
+      flex: 1 1 calc(50% - 7.5px);
+    }
+
+    .btn-print {
+      background-color: #FFFFFF;
+      color: #000000;
+      border: none;
+      border-right: 1px solid #000000;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 14px 16px;
+      white-space: nowrap;
+      flex: 1;
+      text-align: center;
+    }
+    .btn-print:hover {
+      background-color: #f8f8f8;
+      color: #000000;
+      border-right-color: #334155;
+    }
+
+    .btn-print-select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding: 12px 8px;
+      border: none;
+      border-radius: 0;
+      background-color: #FFFFFF;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 18px;
+      color: #000000;
+      font-size: 0;
+      cursor: pointer;
+      width: 44px;
+      min-width: 44px;
+      text-indent: -9999px;
+    }
+
+    .btn-print-select:hover {
+      background-color: #f8f8f8;
+    }
+
+    .btn-print-select option {
+      background-color: #FFFFFF;
+      color: #000000;
+      padding: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      text-indent: 0;
+    }
+
+    @media (max-width: 560px) {
+      .btn-copy-group {
+        width: 100%;
+      }
+      .btn-copy-group .btn-action {
+        flex: 1 1 100%;
+      }
+      .btn-print-group {
+        flex-direction: column;
+      }
+      .btn-print {
+        border-right: none;
+        border-bottom: 1px solid #000000;
+      }
+      .btn-print:hover {
+        border-right: none;
+        border-bottom-color: #334155;
+      }
     }
 
     /* 🌸 BOTÓN COPIAR CON FORMATOS - ROSADO NEÓN CON HOVER INVERTIDO A BLANCO */
@@ -614,6 +714,11 @@
       </div>
     </div>
 
+    <div class="row">
+      <div class="row-label">Nombre del asesor</div>
+      <div class="row-value"><input type="text" id="asesor" placeholder="Asesor X" oninput="actualizarFlujoOrdenActual();"></div>
+    </div>
+
     <h3 class="section-title">Especificaciones por Pieza</h3>
     <div id="piezas-contenedor"></div>
 
@@ -636,6 +741,16 @@
     </div>
 
     <div class="row">
+      <div class="row-label">Número de ticket</div>
+      <div class="row-value"><input type="text" id="ticket" placeholder="12345" oninput="actualizarFlujoOrdenActual();"></div>
+    </div>
+
+    <div class="row">
+      <div class="row-label">Dirección de entrega</div>
+      <div class="row-value"><input type="text" id="direccion-entrega" placeholder="Dirección si aplica" oninput="actualizarFlujoOrdenActual();"></div>
+    </div>
+
+    <div class="row">
       <div class="row-label">Fecha de entrega</div>
       <div class="row-value"><input type="text" id="fecha" placeholder="X / X / 2026" oninput="actualizarFlujoOrdenActual();"></div>
     </div>
@@ -653,8 +768,18 @@
   </div>
 
   <div class="btn-container">
-    <button class="btn-action btn-format" onclick="copiarConFormato()">Copiar con formatos</button>
-    <button class="btn-action btn-wa" onclick="copiarParaWhatsApp()">Copiar para WhatsApp</button>
+    <div class="btn-print-group">
+      <button id="btn-print-action" class="btn-action btn-print" onclick="imprimirFicha()">Imprimir ficha (Hoja carta)</button>
+      <select id="print-size-select" class="btn-print-select" onchange="actualizarTextoBotonImpresion()" aria-label="Seleccionar tamaño de impresión">
+        <option value="letter">Hoja carta</option>
+        <option value="72mm">Rollo 72mm</option>
+        <option value="48mm">Rollo 48mm</option>
+      </select>
+    </div>
+    <div class="btn-copy-group">
+      <button class="btn-action btn-format" onclick="copiarConFormato()">Copiar con formatos</button>
+      <button class="btn-action btn-wa" onclick="copiarParaWhatsApp()">Copiar para WhatsApp</button>
+    </div>
   </div>
 
   <div id="toast" class="toast">¡Copiado con éxito!</div>
@@ -675,6 +800,7 @@
     let seedIdPieza = 0;
     let idOrdenContextualFoco = null;
     let colorSeedActual = null;
+    let lastPrintWindow = null;
 
     const paletaCanonicosContraste = [
       "#00FF66", "#00F0FF", "#FF6600", "#CC00FF", "#FF4D91", "#7C3AED", "#22D3EE"
@@ -758,6 +884,7 @@
         poolOrdenes.push(ordenInicial);
         idOrdenFocalizada = ordenInicial.id;
       } else {
+        limitarOrdenesCompletadas();
         idOrdenFocalizada = cacheFoco && poolOrdenes.some(o => o.id === cacheFoco) ? cacheFoco : poolOrdenes[0].id;
       }
 
@@ -770,7 +897,7 @@
       return {
         id: "ord_" + Date.now() + Math.random().toString(36).substr(2, 4),
         colorSeed: Math.random().toString(36).slice(2),
-        cliente: "", correo: "", telefono: "", nit: "", fecha: "", hora: "", observaciones: "",
+        cliente: "", correo: "", telefono: "", asesor: "", nit: "", ticket: "", direccionEntrega: "", fecha: "", hora: "", observaciones: "",
         completada: false,
         montoTotalStr: "Q 0.00",
         piezas: [{
@@ -816,6 +943,37 @@
         clickBox.className = 'order-details-click';
         clickBox.onclick = () => { cargarOrdenEnPantallaPrincipal(ord.id); };
 
+        if (!ord.completada) {
+          li.draggable = true;
+          li.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', ord.id);
+            e.dataTransfer.effectAllowed = 'move';
+            li.classList.add('dragging');
+          });
+          li.addEventListener('dragend', () => {
+            li.classList.remove('dragging');
+            listaActivas.querySelectorAll('.order-item').forEach(item => item.classList.remove('drag-over'));
+          });
+          li.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (!li.classList.contains('drag-over')) {
+              li.classList.add('drag-over');
+            }
+          });
+          li.addEventListener('dragleave', () => {
+            li.classList.remove('drag-over');
+          });
+          li.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const draggedId = e.dataTransfer.getData('text/plain');
+            if (draggedId && draggedId !== ord.id) {
+              reordenarOrdenesActivas(draggedId, ord.id);
+            }
+            li.classList.remove('drag-over');
+          });
+        }
+
         const nameSpan = document.createElement('span');
         nameSpan.className = 'order-name';
         nameSpan.innerText = ord.cliente.trim() || 'Sin especificar';
@@ -843,8 +1001,46 @@
         }
       });
 
+      listaActivas.ondragover = (e) => { e.preventDefault(); };
+      listaActivas.ondrop = (e) => {
+        e.preventDefault();
+        if (e.target.closest('.order-item')) return;
+        const draggedId = e.dataTransfer.getData('text/plain');
+        if (draggedId) {
+          reordenarOrdenesActivas(draggedId, null);
+        }
+      };
+
       countCompletadas.innerText = completadasContador;
       btnPurge.style.display = completadasContador > 0 ? 'inline-block' : 'none';
+    }
+
+    function reordenarOrdenesActivas(draggedId, targetId) {
+      const draggedIndex = poolOrdenes.findIndex(o => o.id === draggedId);
+      if (draggedIndex === -1) return;
+      const [draggedOrder] = poolOrdenes.splice(draggedIndex, 1);
+
+      if (targetId) {
+        const targetIndex = poolOrdenes.findIndex(o => o.id === targetId);
+        if (targetIndex === -1) {
+          poolOrdenes.push(draggedOrder);
+        } else {
+          poolOrdenes.splice(targetIndex, 0, draggedOrder);
+        }
+      } else {
+        let lastActiveIndex = -1;
+        poolOrdenes.forEach((ord, index) => {
+          if (!ord.completada) lastActiveIndex = index;
+        });
+        if (lastActiveIndex === -1) {
+          poolOrdenes.push(draggedOrder);
+        } else {
+          poolOrdenes.splice(lastActiveIndex + 1, 0, draggedOrder);
+        }
+      }
+
+      guardarEstadoEnLocalStorage();
+      renderizarListadosSidebar();
     }
 
     function crearNuevaOrdenVacia() {
@@ -865,7 +1061,10 @@
       document.getElementById('cliente').value = ord.cliente;
       document.getElementById('correo').value = ord.correo;
       document.getElementById('telefono').value = ord.telefono;
+      document.getElementById('asesor').value = ord.asesor || '';
       document.getElementById('nit').value = ord.nit;
+      document.getElementById('ticket').value = ord.ticket || '';
+      document.getElementById('direccion-entrega').value = ord.direccionEntrega || '';
       document.getElementById('fecha').value = ord.fecha;
       document.getElementById('hora').value = ord.hora;
       document.getElementById('observaciones-generales').value = ord.observaciones;
@@ -922,7 +1121,10 @@
       ord.cliente = document.getElementById('cliente').value;
       ord.correo = document.getElementById('correo').value;
       ord.telefono = document.getElementById('telefono').value;
+      ord.asesor = document.getElementById('asesor').value;
       ord.nit = document.getElementById('nit').value;
+      ord.ticket = document.getElementById('ticket').value;
+      ord.direccionEntrega = document.getElementById('direccion-entrega').value;
       ord.fecha = document.getElementById('fecha').value;
       ord.hora = document.getElementById('hora').value;
       ord.observaciones = document.getElementById('observaciones-generales').value;
@@ -979,9 +1181,28 @@
       if (!ord) return;
 
       ord.completada = completadoStatus;
+      if (completadoStatus) {
+        limitarOrdenesCompletadas();
+      }
+
+      if (!poolOrdenes.some(o => o.id === idOrdenFocalizada)) {
+        idOrdenFocalizada = poolOrdenes.length > 0 ? poolOrdenes[0].id : null;
+      }
+
       guardarEstadoEnLocalStorage();
       renderizarListadosSidebar();
       mostrarToast("Orden archivada");
+    }
+
+    function limitarOrdenesCompletadas() {
+      while (poolOrdenes.filter(o => o.completada).length > 30) {
+        const oldestCompletedIndex = poolOrdenes.findIndex(o => o.completada);
+        if (oldestCompletedIndex === -1) break;
+        const [removedOrder] = poolOrdenes.splice(oldestCompletedIndex, 1);
+        if (removedOrder.id === idOrdenFocalizada) {
+          idOrdenFocalizada = poolOrdenes.length > 0 ? poolOrdenes[0].id : null;
+        }
+      }
     }
 
     function configurarEventosMenuContextual() {
@@ -1243,8 +1464,8 @@
 
     function extraerEstructuraCompleta() {
       const cliente = document.getElementById('cliente').value.trim() || 'Sin especificar';
-      const correo = document.getElementById('correo').value.trim() || 'sin especificar';
-      const telefono = document.getElementById('telefono').value.trim() || 'sin especificar';
+      const correo = document.getElementById('correo').value.trim();
+      const telefono = document.getElementById('telefono').value.trim();
 
       let listaPiezas = [];
       const bloques = document.querySelectorAll('.pieza-block');
@@ -1285,11 +1506,13 @@
       });
 
       return {
-        cliente, correo, telefono, piezas: listaPiezas,
+        cliente, correo, telefono, asesor: document.getElementById('asesor').value.trim(), piezas: listaPiezas,
         montoTotal: document.getElementById('monto-total').value || 'Q 0.00',
-        nit: document.getElementById('nit').value.trim() || 'sin especificar',
-        fecha: document.getElementById('fecha').value.trim() || 'sin especificar',
-        hora: document.getElementById('hora').value.trim() || 'sin especificar',
+        nit: document.getElementById('nit').value.trim(),
+        ticket: document.getElementById('ticket').value.trim(),
+        direccionEntrega: document.getElementById('direccion-entrega').value.trim(),
+        fecha: document.getElementById('fecha').value.trim(),
+        hora: document.getElementById('hora').value.trim(),
         observacionesGenerales: document.getElementById('observaciones-generales').value.trim()
       };
     }
@@ -1338,29 +1561,45 @@
                               (p.notas ? `  Notas de la pieza: ${p.notas}\n` : '');
       });
 
+      const asesorHTML = d.asesor ? `<p style="margin: 4px 0; font-size: medium;"><strong>Asesor:</strong> ${d.asesor}</p>` : '';
+      const correoHTML = d.correo ? `<p style="margin: 4px 0; font-size: medium;"><strong>Correo del que se envía:</strong> ${d.correo}</p>` : '';
+      const telefonoHTML = d.telefono ? `<p style="margin: 4px 0; font-size: medium;"><strong>Teléfono:</strong> ${d.telefono}</p>` : '';
+      const ticketHTML = d.ticket ? `<p style="margin: 4px 0; font-size: medium;"><strong>Número de ticket:</strong> ${d.ticket}</p>` : '';
+      const direccionEntregaHTML = d.direccionEntrega ? `<p style="margin: 4px 0; font-size: medium;"><strong>Dirección de entrega:</strong> ${d.direccionEntrega}</p>` : '';
+      const nitHTML = d.nit ? `<p style="margin: 4px 0; font-size: medium;"><strong>Nit:</strong> ${d.nit}</p>` : '';
+      const fechaHTML = d.fecha ? `<p style="margin: 4px 0; font-size: medium;"><strong>Fecha de entrega:</strong> ${d.fecha}</p>` : '';
+      const horaHTML = d.hora ? `<p style="margin: 4px 0; font-size: medium;"><strong>Hora de entrega:</strong> ${d.hora}</p>` : '';
       let obsGeneralesHTML = d.observacionesGenerales ? `<p style="margin: 4px 0; font-size: medium;"><strong>Observaciones generales:</strong> <em>${d.observacionesGenerales}</em></p>` : '';
 
-      textoPlanoRespaldo += `\n--- DATOS DE ENTREGA ---\n` +
+      textoPlanoRespaldo += (d.correo ? `Correo del que se envía: ${d.correo}\n` : '') +
+                            (d.telefono ? `Teléfono: ${d.telefono}\n` : '') +
+                            (d.asesor ? `Asesor: ${d.asesor}\n` : '') +
+                            `\n--- DATOS DE ENTREGA ---\n` +
                             `Monto total de orden: ${d.montoTotal}\n` +
-                            `Nit: ${d.nit}\n` +
-                            `Fecha de entrega: ${d.fecha}\n` +
-                            `Hora de entrega: ${d.hora}\n` +
+                            (d.nit ? `Nit: ${d.nit}\n` : '') +
+                            (d.ticket ? `Número de ticket: ${d.ticket}\n` : '') +
+                            (d.direccionEntrega ? `Dirección de entrega: ${d.direccionEntrega}\n` : '') +
+                            (d.fecha ? `Fecha de entrega: ${d.fecha}\n` : '') +
+                            (d.hora ? `Hora de entrega: ${d.hora}\n` : '') +
                             (d.observacionesGenerales ? `Observaciones generales: ${d.observacionesGenerales}\n` : '');
 
       const htmlString = `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; font-size: medium;">
           <h3 style="color: ${colorCanonicoCliente}; margin-top: 0; margin-bottom: 16px; font-size: large;"><strong>Orden de ${d.cliente}</strong></h3>
-          <p style="margin: 4px 0; font-size: medium;"><strong>Correo del que se envía:</strong> ${d.correo}</p>
-          <p style="margin: 4px 0; font-size: medium;"><strong>Teléfono:</strong> ${d.telefono}</p>
+          ${correoHTML}
+          ${telefonoHTML}
+          ${asesorHTML}
           
           <h4 style="margin-top: 25px; margin-bottom: 10px; color: #000000; border-bottom: 2px solid #cccccc; padding-bottom: 4px; text-transform: uppercase; font-size: large;">Especificaciones por Pieza</h4>
           ${piezasHTML}
           
           <h4 style="margin-top: 25px; margin-bottom: 10px; color: #000000; border-bottom: 2px solid #cccccc; padding-bottom: 4px; text-transform: uppercase; font-size: large;">Datos de Entrega</h4>
           <p style="margin: 4px 0; font-size: medium;"><strong>Monto total de orden:</strong> <span style="color: ${colorCanonicoCliente};"><strong>${d.montoTotal}</strong></span></p>
-          <p style="margin: 4px 0; font-size: medium;"><strong>Nit:</strong> ${d.nit}</p>
-          <p style="margin: 4px 0; font-size: medium;"><strong>Fecha de entrega:</strong> ${d.fecha}</p>
-          <p style="margin: 4px 0; font-size: medium;"><strong>Hora de entrega:</strong> ${d.hora}</p>
+          ${nitHTML}
+          ${ticketHTML}
+          ${direccionEntregaHTML}
+          ${fechaHTML}
+          ${horaHTML}
           ${obsGeneralesHTML}
         </div>
       `;
@@ -1397,18 +1636,27 @@
                     notaLineaWA;
       });
 
+      const correoWA = d.correo ? `*Correo del que se envía:* ${d.correo}\n` : '';
+      const telefonoWA = d.telefono ? `*Teléfono:* ${d.telefono}\n\n` : '';
+      const asesorWA = d.asesor ? `*Asesor:* ${d.asesor}\n\n` : '';
+      const ticketWA = d.ticket ? `*Número de ticket:* ${d.ticket}\n` : '';
+      const direccionWA = d.direccionEntrega ? `*Dirección de entrega:* ${d.direccionEntrega}\n` : '';
       let obsGeneralesWA = d.observacionesGenerales ? `\n*Observaciones generales:* ${d.observacionesGenerales}` : '';
 
       const textoWhatsApp = `> *_Orden de ${d.cliente}_*\n\n` +
-        `*Correo del que se envía:* ${d.correo}\n` +
-        `*Teléfono:* ${d.telefono}\n\n` +
+        `${correoWA}` +
+        `${telefonoWA}` +
+        `${asesorWA}` +
         `--- *ESPECIFICACIONES POR PIEZA* ---\n` +
         `${piezasWA}\n` +
         `*--- DATOS DE ENTREGA ---*\n\n` +
         `*Monto total:* ${d.montoTotal}\n` +
-        `*Nit:* ${d.nit}\n` +
-        `*Fecha de entrega:* ${d.fecha}\n` +
-        `*Hora de entrega:* ${d.hora}${obsGeneralesWA}`;
+        (d.nit ? `*Nit:* ${d.nit}\n` : '') +
+        ticketWA +
+        direccionWA +
+        (d.fecha ? `*Fecha de entrega:* ${d.fecha}\n` : '') +
+        (d.hora ? `*Hora de entrega:* ${d.hora}` : '') +
+        obsGeneralesWA;
 
       try {
         await navigator.clipboard.writeText(textoWhatsApp);
@@ -1417,6 +1665,159 @@
         console.error(err);
         mostrarToast("Error al copiar");
       }
+    }
+
+    function actualizarTextoBotonImpresion() {
+      const select = document.getElementById('print-size-select');
+      const boton = document.getElementById('btn-print-action');
+      if (!select || !boton) return;
+      const texto = select.options[select.selectedIndex]?.text || 'Seleccione tamaño';
+      boton.innerText = `Imprimir ficha (${texto})`;
+    }
+
+    function imprimirFicha() {
+      const d = extraerEstructuraCompleta();
+      const sizeValue = document.getElementById('print-size-select').value;
+      
+      // Mapeo de tamaños de PDF
+      let pageSize, pageWidth;
+      if (sizeValue === '48mm') {
+        pageSize = '58mm auto';
+        pageWidth = '58mm';
+      } else if (sizeValue === '72mm') {
+        pageSize = '80mm auto';
+        pageWidth = '80mm';
+      } else {
+        pageSize = 'letter portrait';
+        pageWidth = '100%';
+      }
+      
+      const pageMargin = sizeValue === 'letter' ? '12mm' : '6mm';
+
+      let clienteHTML = d.cliente ? `<p class="field"><strong>Cliente:</strong> ${d.cliente}</p>` : '';
+      let correoHTML = d.correo ? `<p class="field"><strong>Correo del que se envía:</strong> ${d.correo}</p>` : '';
+      let telefonoHTML = d.telefono ? `<p class="field"><strong>Teléfono:</strong> ${d.telefono}</p>` : '';
+      let asesorHTML = d.asesor ? `<p class="field"><strong>Asesor:</strong> ${d.asesor}</p>` : '';
+      let ticketHTML = d.ticket ? `<p class="field"><strong>Número de ticket:</strong> ${d.ticket}</p>` : '';
+      let direccionEntregaHTML = d.direccionEntrega ? `<p class="field"><strong>Dirección de entrega:</strong> ${d.direccionEntrega}</p>` : '';
+      let nitHTML = d.nit ? `<p class="field"><strong>Nit:</strong> ${d.nit}</p>` : '';
+      let fechaHTML = d.fecha ? `<p class="field"><strong>Fecha de entrega:</strong> ${d.fecha}</p>` : '';
+      let horaHTML = d.hora ? `<p class="field"><strong>Hora de entrega:</strong> ${d.hora}</p>` : '';
+      let obsHTML = d.observacionesGenerales ? `<p class="field"><strong>Observaciones generales:</strong> ${d.observacionesGenerales}</p>` : '';
+
+      let piezasHTML = '';
+      d.piezas.forEach(p => {
+        const postHTML = p.postImpresion ? `<p class="field"><strong>Procesos post impresión:</strong> ${p.postImpresion}</p>` : '';
+        const notasHTML = p.notas ? `<p class="field"><strong>Notas de la pieza:</strong> ${p.notas}</p>` : '';
+        piezasHTML += `
+          <div class="piece">
+            <p class="piece-title">Pieza ${p.num}: ${p.tipo}</p>
+            <p class="field"><strong>Dimensiones del arte:</strong> ${p.dimensiones}</p>
+            <p class="field"><strong>Nombre del archivo:</strong> ${p.archivo}</p>
+            <p class="field"><strong>Software utilizado:</strong> ${p.software}</p>
+            <p class="field"><strong>Papel / Soporte:</strong> ${p.soporte}</p>
+            <p class="field"><strong>Sistema de reproducción:</strong> ${p.reproduccion}</p>
+            <p class="field"><strong>Modo de color:</strong> ${p.color}</p>
+            ${postHTML}
+            <p class="field"><strong>Precio unitario por arte:</strong> ${p.precio}</p>
+            <p class="field"><strong>Cantidad de artes:</strong> ${p.cantidad}</p>
+            ${notasHTML}
+          </div>`;
+      });
+
+      const printHtml = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <title>Ficha de impresión</title>
+          <style>
+            @page { size: ${pageSize}; margin: ${pageMargin}; }
+            html, body { margin: 0; padding: 0; background: #ffffff; color: #000000; }
+            body { width: ${pageWidth}; font-family: Arial, sans-serif; font-size: 12px; line-height: 1.5; }
+            .print-container { padding: 10px; box-sizing: border-box; }
+            h1 { font-size: 18px; margin: 0 0 10px; text-align: center; }
+            h2 { font-size: 14px; margin: 18px 0 8px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid #000000; padding-bottom: 4px; }
+            .field { margin: 4px 0; font-size: 12px; }
+            .field strong { font-weight: bold; }
+            .piece { margin: 10px 0 0 0; padding: 10px 0 0 10px; border-left: 3px solid #000000; }
+            .piece-title { margin: 0 0 6px 0; font-size: 13px; font-weight: bold; }
+            .section { margin-bottom: 12px; }
+            .section-top .field { margin-bottom: 6px; }
+            .no-break { page-break-inside: avoid; }
+            .letter .pieces-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+            .letter .piece { width: calc(50% - 6px); box-sizing: border-box; }
+          </style>
+        </head>
+        <body class="${sizeValue === 'letter' ? 'letter' : ''}">
+          <div class="print-container">
+            <h1>Orden de ${d.cliente || 'Sin especificar'}</h1>
+            <div class="section section-top">
+              ${correoHTML}
+              ${telefonoHTML}
+              ${asesorHTML}
+            </div>
+            <h2>Especificaciones por Pieza</h2>
+            <div class="pieces-grid">
+              ${piezasHTML}
+            </div>
+            <h2>Datos de Entrega</h2>
+            <div class="section">
+              <p class="field"><strong>Monto total de orden:</strong> ${d.montoTotal}</p>
+              ${nitHTML}
+              ${ticketHTML}
+              ${direccionEntregaHTML}
+              ${fechaHTML}
+              ${horaHTML}
+              ${obsHTML}
+            </div>
+          </div>
+        </body>
+        </html>`;
+
+      if (lastPrintWindow && !lastPrintWindow.closed) {
+        lastPrintWindow.close();
+      }
+
+      const printWindow = window.open('about:blank', '_blank');
+      if (!printWindow) {
+        mostrarToast('No se pudo abrir la ventana de impresión');
+        return;
+      }
+      lastPrintWindow = printWindow;
+      printWindow.document.open();
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
+
+      let didTriggerPrint = false;
+      const triggerPrint = () => {
+        if (didTriggerPrint || printWindow.closed) return;
+        didTriggerPrint = true;
+        try {
+          printWindow.focus();
+          printWindow.print();
+        } catch (err) {
+          console.error('Error al imprimir:', err);
+        }
+      };
+
+      if (printWindow.document.readyState === 'complete') {
+        triggerPrint();
+      } else {
+        printWindow.addEventListener('load', triggerPrint);
+      }
+
+      setTimeout(triggerPrint, 500);
+      printWindow.addEventListener('afterprint', () => {
+        if (!printWindow.closed) {
+          printWindow.close();
+        }
+      });
+      printWindow.addEventListener('beforeunload', () => {
+        if (lastPrintWindow === printWindow) {
+          lastPrintWindow = null;
+        }
+      });
     }
 
     function mostrarToast(mensaje) {
