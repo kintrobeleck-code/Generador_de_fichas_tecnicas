@@ -782,8 +782,8 @@
       <button id="btn-print-action" class="btn-action btn-print" onclick="imprimirFicha()">Imprimir ficha (Hoja carta)</button>
       <select id="print-size-select" class="btn-print-select" onchange="actualizarTextoBotonImpresion(); actualizarFlujoOrdenActual();" aria-label="Seleccionar tamaño de impresión">
         <option value="letter">Hoja carta</option>
-        <option value="72mm">Rollo 72mm</option>
-        <option value="48mm">Rollo 48mm</option>
+        <option value="72mm">Rollo 80mm</option>
+        <option value="48mm">Rollo 58mm</option>
       </select>
     </div>
     <div class="btn-copy-group">
@@ -1833,6 +1833,266 @@
         }
       });
     }
+
+    /* Manejo de pegado desde portapapeles: detectar contenido copiado por los botones
+       y rellenar automáticamente los campos y piezas en la página. */
+    function handlePaste(event) {
+      const clipboard = (event.clipboardData || window.clipboardData);
+      if (!clipboard) return;
+
+      const html = clipboard.getData('text/html');
+      const text = clipboard.getData('text/plain');
+
+      let parsed = null;
+      if (html && html.indexOf('Orden de') !== -1 && html.indexOf('Especificaciones por Pieza') !== -1) {
+        parsed = parseCopiedHtml(html);
+      } else if (text && (text.indexOf('ESPECIFICACIONES POR PIEZA') !== -1 || text.indexOf('Orden de') !== -1)) {
+        parsed = parseCopiedWhatsApp(text);
+      }
+
+      if (parsed && (parsed.cliente || (parsed.piezas && parsed.piezas.length > 0))) {
+        event.preventDefault();
+        fillFromParsed(parsed);
+        mostrarToast('Campos llenados desde portapapeles');
+      }
+    }
+
+    function parseCopiedHtml(htmlString) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = htmlString;
+
+      const result = { cliente: '', correo: '', telefono: '', asesor: '', nit: '', ticket: '', direccionEntrega: '', fecha: '', hora: '', observacionesGenerales: '', montoTotal: '', piezas: [] };
+
+      // Cliente (busca encabezado tipo 'Orden de X')
+      const h3 = tmp.querySelector('h3') || tmp.querySelector('h1');
+      if (h3) result.cliente = h3.textContent.replace(/Orden de\s*/i, '').trim();
+
+      // Buscar párrafos por texto fuerte
+      const paragraphs = Array.from(tmp.querySelectorAll('p'));
+      paragraphs.forEach(p => {
+        const txt = (p.textContent || '').trim();
+        if (/Correo del que se envía[:]?/i.test(txt)) result.correo = txt.replace(/Correo del que se envía[:]?/i, '').trim();
+        if (/Teléfono[:]?/i.test(txt)) result.telefono = txt.replace(/Teléfono[:]?/i, '').trim();
+        if (/Asesor[:]?/i.test(txt)) result.asesor = txt.replace(/Asesor[:]?/i, '').trim();
+        if (/Número de ticket[:]?/i.test(txt)) result.ticket = txt.replace(/Número de ticket[:]?/i, '').trim();
+        if (/Dirección de entrega[:]?/i.test(txt)) result.direccionEntrega = txt.replace(/Dirección de entrega[:]?/i, '').trim();
+        if (/Nit[:]?/i.test(txt)) result.nit = txt.replace(/Nit[:]?/i, '').trim();
+        if (/Fecha de entrega[:]?/i.test(txt)) result.fecha = txt.replace(/Fecha de entrega[:]?/i, '').trim();
+        if (/Hora de entrega[:]?/i.test(txt)) result.hora = txt.replace(/Hora de entrega[:]?/i, '').trim();
+        if (/Observaciones generales[:]?/i.test(txt)) result.observacionesGenerales = txt.replace(/Observaciones generales[:]?/i, '').trim();
+        if (/Monto total/i.test(txt)) result.montoTotal = txt.replace(/Monto total(?: de orden)?:?/i, '').trim();
+      });
+
+      // Detectar bloques de pieza: divs que contienen '— Pieza #'
+      // Buscar bloques que representen piezas (pueden usar 'Pieza', '— Pieza' o 'Pieza #')
+      const allElems = Array.from(tmp.querySelectorAll('*'));
+      allElems.forEach(el => {
+        const txt = (el.textContent || '').trim();
+        if (/\bPieza\b\s*#?\d*/i.test(txt) || /—\s*Pieza/i.test(txt)) {
+          const piece = { num: '', tipo: '', dimensiones: '', archivo: '', software: '', soporte: '', reproduccion: '', color: '', postImpresion: '', precio: '', cantidad: '', notas: '' };
+          const pTags = Array.from(el.querySelectorAll('p'));
+          pTags.forEach(p => {
+            const t = (p.textContent || '').trim();
+            if (t.match(/Pieza\s*#?\d+[:\-]?/i) || t.match(/—\s*Pieza\s*#?\d+[:\-]?/i)) {
+              const m = t.replace(/(?:—\s*)?Pieza\s*#?\d+[:\-]?/i, '').trim();
+              piece.tipo = m;
+              const numMatch = t.match(/#(\d+)/);
+              if (numMatch) piece.num = parseInt(numMatch[1], 10);
+            }
+            if (/Dimensiones del arte[:]?/i.test(t)) piece.dimensiones = t.replace(/Dimensiones del arte[:]?/i, '').trim();
+            if (/Nombre del archivo[:]?/i.test(t)) piece.archivo = t.replace(/Nombre del archivo[:]?/i, '').trim();
+            if (/Software utilizado[:]?/i.test(t)) piece.software = t.replace(/Software utilizado[:]?/i, '').trim();
+            if (/Papel\s*\/\s*Soporte[:]?/i.test(t)) piece.soporte = t.replace(/Papel\s*\/\s*Soporte[:]?/i, '').trim();
+            if (/Sistema de reproducción[:]?/i.test(t)) piece.reproduccion = t.replace(/Sistema de reproducción[:]?/i, '').trim();
+            if (/Modo de color[:]?/i.test(t)) piece.color = t.replace(/Modo de color[:]?/i, '').trim();
+            if (/Procesos post impresión[:]?/i.test(t)) piece.postImpresion = t.replace(/Procesos post impresión[:]?/i, '').trim();
+            if (/Precio unitario por arte[:]?/i.test(t)) piece.precio = t.replace(/Precio unitario por arte[:]?/i, '').trim();
+            if (/Cantidad de artes[:]?/i.test(t)) piece.cantidad = t.replace(/Cantidad de artes[:]?/i, '').trim();
+            if (/Notas de la pieza[:]?/i.test(t)) piece.notas = t.replace(/Notas de la pieza[:]?/i, '').trim();
+          });
+          if (piece.tipo || piece.dimensiones || piece.archivo) result.piezas.push(piece);
+        }
+      });
+
+      // Extraer dimensiones desde el texto plano por si están fragmentadas en nodos
+      const textAll = (tmp.textContent || '').replace(/\u00A0/g, ' ').replace(/[\u2012\u2013\u2014\u2015]/g, '-');
+      const dimRegex = /Dimensiones del arte[:\s]*([0-9.,]+)\s*[×xX]\s*([0-9.,]+)\s*(\w+)?/g;
+      const dims = [];
+      let dm;
+      while ((dm = dimRegex.exec(textAll)) !== null) {
+        dims.push({ ancho: dm[1].trim(), alto: dm[2].trim(), unidad: (dm[3] || '').trim() });
+      }
+      // Asignar dimensiones encontradas a las piezas en orden si no tienen ya dimensiones
+      if (dims.length && result.piezas.length) {
+        for (let i = 0; i < dims.length && i < result.piezas.length; i++) {
+          const existing = result.piezas[i].dimensiones || '';
+          const needsReplace = !existing.trim() || !/[×xX]/.test(existing);
+          if (needsReplace) {
+            result.piezas[i].dimensiones = `${dims[i].ancho} × ${dims[i].alto} ${dims[i].unidad}`.trim();
+          }
+        }
+      }
+
+      return result;
+    }
+
+    function parseCopiedWhatsApp(text) {
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      const result = { cliente: '', correo: '', telefono: '', asesor: '', nit: '', ticket: '', direccionEntrega: '', fecha: '', hora: '', observacionesGenerales: '', montoTotal: '', piezas: [] };
+
+      // Cliente
+      const firstLine = lines[0] || '';
+      const clienteMatch = firstLine.match(/Orden de\s*(.*)/i) || firstLine.match(/\*?_?Orden de\s*(.*)_?\*?/i);
+      if (clienteMatch) result.cliente = clienteMatch[1].replace(/[_*]/g, '').trim();
+
+      let currentPiece = null;
+      lines.forEach(line => {
+        // limpiar formato de WhatsApp (*, _, ~, `) y bullets antes de parsear
+        const clean = line.replace(/[*_~`]/g, '').replace(/^[>\-\u2022\s\*]+/, '').trim();
+        if (/^\d+\./.test(clean) || /^\*?\s*\d+\./.test(clean)) {
+          // nueva pieza (línea tipo '*1. Tipo')
+          if (currentPiece) result.piezas.push(currentPiece);
+          const title = clean.replace(/^[^\w]*(\d+\.)?\s*/, '').replace(/\*/g, '').trim();
+          currentPiece = { num: result.piezas.length + 1, tipo: title, dimensiones: '', archivo: '', software: '', soporte: '', reproduccion: '', color: '', postImpresion: '', precio: '', cantidad: '', notas: '' };
+          return;
+        }
+
+        // campos dentro de pieza o generales
+        const mCorreo = clean.match(/Correo del que se envía[:]?\s*(.+)/i);
+        if (mCorreo) result.correo = mCorreo[1].trim();
+        const mTel = clean.match(/Teléfono[:]?\s*(.+)/i);
+        if (mTel) result.telefono = mTel[1].trim();
+        const mAs = clean.match(/Asesor[:]?\s*(.+)/i);
+        if (mAs) result.asesor = mAs[1].trim();
+        const mTicket = clean.match(/Número de ticket[:]?\s*(.+)/i);
+        if (mTicket) result.ticket = mTicket[1].trim();
+        const mDir = clean.match(/Dirección de entrega[:]?\s*(.+)/i);
+        if (mDir) result.direccionEntrega = mDir[1].trim();
+        const mNit = clean.match(/Nit[:]?\s*(.+)/i);
+        if (mNit) result.nit = mNit[1].trim();
+        const mFecha = clean.match(/Fecha de entrega[:]?\s*(.+)/i);
+        if (mFecha) result.fecha = mFecha[1].trim();
+        const mHora = clean.match(/Hora de entrega[:]?\s*(.+)/i);
+        if (mHora) result.hora = mHora[1].trim();
+        const mMonto = clean.match(/Monto total[:\s]*(.+)/i);
+        if (mMonto) result.montoTotal = mMonto[1].trim();
+
+        // campos de pieza (líneas con '• *Dimensiones del arte:* ...' o '• Dimensiones del arte:')
+      if (currentPiece) {
+        const md = clean.match(/Dimensiones del arte[:\*]*\s*(.+)/i);
+        if (md) currentPiece.dimensiones = md[1].trim();
+        const ma = clean.match(/Nombre del archivo[:\*]*\s*(.+)/i);
+        if (ma) currentPiece.archivo = ma[1].trim();
+        const ms = clean.match(/Software[:\*]*\s*(.+)/i);
+        if (ms) currentPiece.software = ms[1].trim();
+        const mso = clean.match(/Soporte[:\*]*\s*(.+)/i);
+        if (mso) currentPiece.soporte = mso[1].trim();
+        const mr = clean.match(/Reproducción[:\*]*\s*(.+)/i);
+        if (mr) currentPiece.reproduccion = mr[1].trim();
+        const mco = clean.match(/Color[:\*]*\s*(.+)/i);
+        if (mco) currentPiece.color = mco[1].trim();
+        const mpost = clean.match(/Post impresión[:\*]*\s*(.+)/i);
+        if (mpost) currentPiece.postImpresion = mpost[1].trim();
+        const mprecio = clean.match(/Precio(?: por arte| unitario por arte)?[:\*]*\s*(.+)/i);
+        if (mprecio) currentPiece.precio = mprecio[1].trim();
+        const mcant = clean.match(/Cantidad(?: de artes)?:[:\*]*\s*(.+)/i);
+        if (mcant) currentPiece.cantidad = mcant[1].trim();
+        const mnot = clean.match(/Notas de la pieza[:\*]*\s*(.+)/i);
+        if (mnot) currentPiece.notas = mnot[1].trim();
+      }
+      });
+
+      if (currentPiece) result.piezas.push(currentPiece);
+      return result;
+    }
+
+    function fillFromParsed(d) {
+      if (!d) return;
+      if (d.cliente) document.getElementById('cliente').value = d.cliente;
+      if (d.correo) document.getElementById('correo').value = d.correo;
+      if (d.telefono) document.getElementById('telefono').value = d.telefono;
+      if (d.asesor) document.getElementById('asesor').value = d.asesor;
+      if (d.nit) document.getElementById('nit').value = d.nit;
+      if (d.ticket) document.getElementById('ticket').value = d.ticket;
+      if (d.direccionEntrega) document.getElementById('direccion-entrega').value = d.direccionEntrega;
+      if (d.fecha) document.getElementById('fecha').value = d.fecha;
+      if (d.hora) document.getElementById('hora').value = d.hora;
+      if (d.observacionesGenerales) document.getElementById('observaciones-generales').value = d.observacionesGenerales;
+      if (d.montoTotal) document.getElementById('monto-total').value = d.montoTotal;
+
+      // Reemplazar piezas existentes por las del portapapeles
+      const cont = document.getElementById('piezas-contenedor');
+      if (cont && Array.isArray(d.piezas)) {
+        cont.innerHTML = '';
+        // reset seedIdPieza to allow new IDs to continue increasing
+        // keep current seedIdPieza so IDs remain unique
+        d.piezas.forEach(p => {
+          agregarNuevoBloquePieza();
+          const uiBlock = cont.lastElementChild;
+          if (!uiBlock) return;
+          if (p.tipo) uiBlock.querySelector('.p-tipo').value = p.tipo;
+          if (p.dimensiones) {
+              // intentar separar dimensiones en 'ancho × alto' y unidad (por ejemplo: '5.5 × 8.5 In')
+              const dimMatch = p.dimensiones.match(/\s*([0-9.,]+)\s*[×xX]\s*([0-9.,]+)\s*(\w+)?/i);
+              if (dimMatch) {
+                uiBlock.querySelector('.p-ancho').value = dimMatch[1].trim();
+                uiBlock.querySelector('.p-alto').value = dimMatch[2].trim();
+                if (dimMatch[3]) uiBlock.querySelector('.p-unidad').value = dimMatch[3].trim();
+              } else {
+                // respaldo: extraer los dos primeros números encontrados
+                const nums = p.dimensiones.match(/([0-9]+[.,]?[0-9]*)/g);
+                if (nums && nums.length >= 2) {
+                  uiBlock.querySelector('.p-ancho').value = nums[0].trim();
+                  uiBlock.querySelector('.p-alto').value = nums[1].trim();
+                  const unitMatch = p.dimensiones.match(/(mm|cm|in|inch|inches|pt|px)\b/i);
+                  if (unitMatch) uiBlock.querySelector('.p-unidad').value = unitMatch[1];
+                } else {
+                  // si no hay dos números, guardar lo que haya en ancho
+                  const parts = p.dimensiones.split(/\s+|\//).filter(Boolean);
+                  uiBlock.querySelector('.p-ancho').value = parts[0] || '';
+                  if (parts[2]) uiBlock.querySelector('.p-unidad').value = parts[2];
+                }
+              }
+            }
+          if (p.archivo) uiBlock.querySelector('.p-archivo').value = p.archivo;
+          if (p.software) uiBlock.querySelector('.p-software').value = p.software;
+          if (p.soporte) uiBlock.querySelector('.p-soporte').value = p.soporte;
+          if (p.postImpresion) uiBlock.querySelector('.p-post-redaccion').value = p.postImpresion;
+          if (p.precio) {
+              const precioInput = uiBlock.querySelector('.p-precio');
+              // normalizar precio a formato 'Q X.XX'
+              const num = String(p.precio).replace(/[^0-9.]/g, '');
+              if (num) {
+                precioInput.value = `Q ${parseFloat(num).toFixed(2)}`;
+                if (typeof aplicarMascaraPrecio === 'function') aplicarMascaraPrecio(precioInput);
+              } else {
+                precioInput.value = p.precio;
+              }
+          }
+          if (p.cantidad) {
+              const cant = String(p.cantidad).replace(/[^0-9]/g, '');
+              uiBlock.querySelector('.p-cantidad').value = cant || p.cantidad;
+          }
+          if (p.notas) uiBlock.querySelector('.p-notas').value = p.notas;
+          if (p.color) {
+              const radios = uiBlock.querySelectorAll('input[type="radio"]');
+              if (radios && radios.length) {
+                const target = Array.from(radios).find(r => (r.value || '').toLowerCase().trim() === (p.color || '').toLowerCase().trim() || (p.color || '').toLowerCase().trim().startsWith((r.value || '').toLowerCase().trim()));
+                if (target) target.checked = true;
+              }
+            }
+        });
+        reordenarNumeracionVisual();
+        // asegurar que los precios estén correctamente formateados y recalcular totales
+        document.querySelectorAll('.p-precio').forEach(inp => { if (inp && typeof aplicarMascaraPrecio === 'function') aplicarMascaraPrecio(inp); });
+        calcularMontoTotalGlobal();
+      }
+
+      actualizarFlujoOrdenActual();
+    }
+
+    // Registrar escucha global de pegado
+    document.addEventListener('paste', handlePaste);
 
     function mostrarToast(mensaje) {
       const toast = document.getElementById("toast");
