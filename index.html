@@ -288,6 +288,42 @@
       align-items: center;
     }
 
+    .precio-unitario-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .precio-unitario-resumen {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+      font-size: 12px;
+      line-height: 1;
+      color: #D8DEFF;
+    }
+
+    .precio-unitario-resumen .precio-total-final {
+      color: #FF4FC3;
+      font-size: 11px;
+      font-weight: bold;
+      line-height: 1.05;
+    }
+
+    .p-precio-diseno-info {
+      margin-top: 2px;
+    }
+
+    .precio-unitario-resumen .precio-diseno-label,
+    .p-precio-diseno-info .precio-diseno-label {
+      color: #FF4FC3;
+      font-size: 10px;
+      line-height: 1.05;
+      font-weight: bold;
+    }
+
     input[type="text"],
     input[type="email"],
     input[type="number"],
@@ -403,7 +439,42 @@
     select.custom-select option { background-color: #081455; color: #FFFFFF; }
     select.custom-select:focus { outline: none; }
 
+    .diseno-select-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .diseno-select-wrap select.p-diseno {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 1;
+    }
+    .p-diseno-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      color: #FFFFFF;
+      font-family: 'Arial Narrow', Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.35;
+      white-space: normal;
+      word-break: break-word;
+      min-height: 22px;
+      cursor: pointer;
+      padding-right: 4px;
+    }
+    .diseno-arrow {
+      flex-shrink: 0;
+      margin-left: 6px;
+      font-size: 11px;
+      opacity: 0.7;
+      padding-top: 3px;
+    }
+
     .row.textarea-row { align-items: flex-start; }
+    .row.precio-row { align-items: flex-start; }
 
     .logo-puntos {
       display: grid;
@@ -1105,6 +1176,7 @@
         uiBlock.querySelector('.p-software').value = pieza.software;
         uiBlock.querySelector('.p-soporte').value = pieza.soporte;
         uiBlock.querySelector('.p-diseno').value = pieza.diseno;
+        actualizarDisplayNivelDiseno(uiBlock.querySelector('.p-diseno'));
         uiBlock.querySelector('.p-reproduccion').value = pieza.reproduccion;
         uiBlock.querySelector('.p-post-redaccion').value = pieza.post;
         uiBlock.querySelector('.p-precio').value = pieza.precio;
@@ -1117,7 +1189,10 @@
         }
         
         uiBlock.style.borderLeftColor = colorCanonico;
+        actualizarResumenPrecioPieza(uiBlock);
       });
+
+      actualizarResumenesPrecioPiezas();
 
       calcularMontoTotalGlobal();
       guardarEstadoEnLocalStorage();
@@ -1178,6 +1253,7 @@
       ord.piezas = piezasCompiladas;
       ord.printSize = document.getElementById('print-size-select').value;
       calcularMontoTotalGlobal();
+      actualizarResumenesPrecioPiezas();
       ord.montoTotalStr = document.getElementById('monto-total').value;
 
       guardarEstadoEnLocalStorage();
@@ -1366,14 +1442,20 @@
         <div class="row">
           <div class="row-label">Nivel de diseño</div>
           <div class="row-value">
-            <select class="custom-select p-diseno" onchange="actualizarFlujoOrdenActual();">
-              <option value="0" data-nombre="Ninguno">No requiere diseño adicional (Q 0)</option>
-              <option value="25" data-nombre="DISEÑO STICKERS DE CUADERNOS O MONTAJES">DISEÑO STICKERS DE CUADERNOS O MONTAJES — Q 25</option>
-              <option value="50" data-nombre="DISEÑO NIVEL 1">DISEÑO NIVEL 1 — Q 50</option>
-              <option value="75" data-nombre="DISEÑO NIVEL 2">DISEÑO NIVEL 2 — Q 75</option>
-              <option value="200" data-nombre="DISEÑO NIVEL 3">DISEÑO NIVEL 3 — Q 200</option>
-              <option value="150" data-nombre="DISEÑO TARJETAS DE PRESENTACIÓN">DISEÑO TARJETAS DE PRESENTACIÓN — Q 150 (por lado)</option>
-            </select>
+            <div class="diseno-select-wrap">
+              <div class="p-diseno-display">
+                <span class="p-diseno-text">No requiere diseño adicional (Q 0)</span>
+                <span class="diseno-arrow">&#9660;</span>
+              </div>
+              <select class="custom-select p-diseno" onchange="actualizarFlujoOrdenActual(); actualizarDisplayNivelDiseno(this); calcularMontoTotalGlobal(); actualizarResumenPrecioPieza(this.closest('.pieza-block'));">
+                <option value="0" data-nombre="Ninguno">No requiere diseño adicional (Q 0)</option>
+                <option value="25" data-nombre="DISEÑO STICKERS DE CUADERNOS O MONTAJES">DISEÑO STICKERS DE CUADERNOS O MONTAJES — Q 25</option>
+                <option value="50" data-nombre="DISEÑO NIVEL 1">DISEÑO NIVEL 1 — Q 50</option>
+                <option value="75" data-nombre="DISEÑO NIVEL 2">DISEÑO NIVEL 2 — Q 75</option>
+                <option value="200" data-nombre="DISEÑO NIVEL 3">DISEÑO NIVEL 3 — Q 200</option>
+                <option value="150" data-nombre="DISEÑO TARJETAS DE PRESENTACIÓN">DISEÑO TARJETAS DE PRESENTACIÓN — Q 150 (por lado)</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -1401,19 +1483,25 @@
           </div>
         </div>
 
-        <div class="row">
-          <div class="row-label">Precio unitario por arte</div>
+        <div class="row precio-row">
+          <div class="row-label">
+            Precio unitario por arte
+            <div class="p-precio-diseno-info"></div>
+          </div>
           <div class="row-value">
-            <input type="text" class="p-precio" placeholder="Q 25.00" 
-                   onfocus="limpiarMascaraPrecio(this)" 
-                   onblur="aplicarMascaraPrecio(this); actualizarFlujoOrdenActual();" 
-                   oninput="calcularMontoTotalGlobal()">
+            <div class="precio-unitario-wrap">
+              <input type="text" class="p-precio" placeholder="Q 25.00" 
+                     onfocus="limpiarMascaraPrecio(this)" 
+                     onblur="aplicarMascaraPrecio(this); actualizarFlujoOrdenActual();" 
+                     oninput="calcularMontoTotalGlobal(); actualizarResumenPrecioPieza(this.closest('.pieza-block'));">
+              <div class="precio-unitario-resumen p-precio-resumen"></div>
+            </div>
           </div>
         </div>
 
         <div class="row">
           <div class="row-label">Cantidad de artes</div>
-          <div class="row-value"><input type="number" class="p-cantidad" placeholder="2" oninput="actualizarFlujoOrdenActual();"></div>
+          <div class="row-value"><input type="number" class="p-cantidad" placeholder="2" oninput="actualizarFlujoOrdenActual(); calcularMontoTotalGlobal();"></div>
         </div>
 
         <div class="row textarea-row">
@@ -1458,14 +1546,95 @@
       input.value = Number.isFinite(precio) ? `Q ${precio.toFixed(2)}` : '';
     }
 
+    function parsearMontoMoneda(valor) {
+      const limpio = String(valor ?? '').replace(/[^\d.]/g, '');
+      const numero = parseFloat(limpio);
+      return Number.isFinite(numero) ? numero : 0;
+    }
+
+    function formatearMontoMoneda(numero) {
+      return `Q ${Number(numero || 0).toFixed(2)}`;
+    }
+
+    function obtenerDetallePrecioPiezaDesdeBloque(bloque) {
+      if (!bloque) {
+        return { precioOriginal: 0, precioDiseno: 0, precioReal: 0, nombreDiseno: '' };
+      }
+
+      const precioOriginal = parsearMontoMoneda(bloque.querySelector('.p-precio')?.value || '');
+      const precioDiseno = parsearMontoMoneda(bloque.querySelector('.p-diseno')?.value || '0');
+      const precioReal = precioOriginal + precioDiseno;
+      const selectDiseno = bloque.querySelector('.p-diseno');
+      const opcion = selectDiseno?.options?.[selectDiseno.selectedIndex];
+      const nombreDiseno = (opcion?.dataset?.nombre || opcion?.textContent || '').trim();
+
+      return { precioOriginal, precioDiseno, precioReal, nombreDiseno };
+    }
+
+    function obtenerDetallePrecioPiezaDesdeDatos(pieza) {
+      const precioOriginal = parsearMontoMoneda(pieza?.precioOriginal ?? pieza?.precio ?? '');
+      const precioDiseno = parsearMontoMoneda(pieza?.precioDiseno ?? pieza?.diseno ?? '0');
+      const precioReal = precioOriginal + precioDiseno;
+      const nombreDiseno = (pieza?.disenoNombre || '').trim();
+
+      return { precioOriginal, precioDiseno, precioReal, nombreDiseno };
+    }
+
+    function obtenerNumeroNivelDiseno(nombreDiseno) {
+      const texto = String(nombreDiseno || '');
+      const match = texto.match(/nivel\s*de\s*diseño\s*(\d+)/i) || texto.match(/nivel\s*(\d+)/i);
+      return match ? match[1] : '';
+    }
+
+    function actualizarDisplayNivelDiseno(selectEl) {
+      if (!selectEl) return;
+      const wrap = selectEl.closest('.diseno-select-wrap');
+      if (!wrap) return;
+      const textSpan = wrap.querySelector('.p-diseno-text');
+      if (!textSpan) return;
+      const selectedOption = selectEl.options[selectEl.selectedIndex];
+      textSpan.textContent = selectedOption ? selectedOption.textContent.trim() : '';
+    }
+
+    function actualizarResumenPrecioPieza(bloque) {
+      if (!bloque) return;
+      const vista = bloque.querySelector('.p-precio-resumen');
+      const infoDiseno = bloque.querySelector('.p-precio-diseno-info');
+      if (!vista) return;
+
+      const detalle = obtenerDetallePrecioPiezaDesdeBloque(bloque);
+      if (!detalle.precioOriginal && !detalle.precioDiseno) {
+        vista.innerHTML = '';
+        if (infoDiseno) infoDiseno.innerHTML = '';
+        return;
+      }
+
+      if (detalle.precioDiseno > 0) {
+        const nivelNumero = obtenerNumeroNivelDiseno(detalle.nombreDiseno);
+        const nivelEtiqueta = nivelNumero ? `Nivel de diseño ${nivelNumero}` : (detalle.nombreDiseno || 'Nivel de diseño aplicado');
+        const precioNivel = formatearMontoMoneda(detalle.precioDiseno);
+        const precioTotal = formatearMontoMoneda(detalle.precioReal);
+        if (infoDiseno) infoDiseno.innerHTML = `<span class="precio-diseno-label">+ ${nivelEtiqueta} ${precioNivel}</span>`;
+        vista.innerHTML = `<span class="precio-total-final">${precioTotal}</span>`;
+      } else {
+        if (infoDiseno) infoDiseno.innerHTML = '';
+        vista.innerHTML = '';
+      }
+    }
+
+    function actualizarResumenesPrecioPiezas() {
+      document.querySelectorAll('.pieza-block').forEach(bloque => actualizarResumenPrecioPieza(bloque));
+    }
+
     function calcularMontoTotalGlobal() {
       const bloques = document.querySelectorAll('.pieza-block');
       let total = 0;
 
       bloques.forEach((bloque) => {
         const precioRaw = bloque.querySelector('.p-precio')?.value || '';
+        const precioDisenoRaw = bloque.querySelector('.p-diseno')?.value || '0';
         const cantidadRaw = bloque.querySelector('.p-cantidad')?.value || '0';
-        const precio = parseFloat(precioRaw.replace(/[^\d.]/g, '')) || 0;
+        const precio = parsearMontoMoneda(precioRaw) + parsearMontoMoneda(precioDisenoRaw);
         const cantidad = parseInt(cantidadRaw, 10) || 0;
         total += precio * cantidad;
       });
@@ -1502,19 +1671,33 @@
         const blockId = bloque.id.replace('block-pieza-', '');
         const colorOpt = bloque.querySelector(`input[name="color_${blockId}"]:checked`);
         const color = colorOpt ? colorOpt.value : 'Color T';
+        const disenoSelect = bloque.querySelector('.p-diseno');
+        const disenoValue = disenoSelect ? disenoSelect.value : '0';
+        const disenoOption = disenoSelect?.options?.[disenoSelect.selectedIndex];
+        const disenoNombre = (disenoOption?.dataset?.nombre || disenoOption?.textContent || '').trim();
 
         const postRaw = bloque.querySelector('.p-post-redaccion').value.trim();
         const postImpresionVal = (postRaw === "" || postRaw.includes("Corte, semicorte")) ? null : postRaw;
 
         const precioRaw = bloque.querySelector('.p-precio').value.replace(/[^\d.]/g, '');
-        const precioVal = precioRaw ? `Q ${parseFloat(precioRaw).toFixed(2)}` : 'sin especificar';
+        const precioOriginalNum = precioRaw ? parseFloat(precioRaw) : 0;
+        const precioDisenoNum = parsearMontoMoneda(disenoValue);
+        const precioUnitarioRealNum = precioOriginalNum + precioDisenoNum;
+        const precioVal = precioRaw ? `Q ${precioOriginalNum.toFixed(2)}` : 'sin especificar';
+        const precioDisenoVal = `Q ${precioDisenoNum.toFixed(2)}`;
+        const precioUnitarioRealVal = `Q ${precioUnitarioRealNum.toFixed(2)}`;
         
         const cantidadRaw = bloque.querySelector('.p-cantidad').value;
-        const cantidadVal = cantidadRaw ? `${parseInt(cantidadRaw)} artes` : 'sin especificar';
+        const cantidadVal = cantidadRaw ? `${parseInt(cantidadRaw, 10)}` : 'sin especificar';
         const notas = bloque.querySelector('.p-notas').value.trim();
 
         listaPiezas.push({
           num: index + 1, tipo, dimensiones, archivo, software, soporte, reproduccion, color,
+          diseno: disenoValue,
+          disenoNombre,
+          precioOriginal: precioVal,
+          precioDiseno: precioDisenoVal,
+          precioUnitarioReal: precioUnitarioRealVal,
           postImpresion: postImpresionVal, precio: precioVal, cantidad: cantidadVal, notas
         });
       });
@@ -1535,16 +1718,19 @@
       const d = extraerEstructuraCompleta();
       let piezasHTML = '';
       
-      let textoPlanoRespaldo = `Orden de ${d.cliente}\n` +
-                               `Correo del que se envía: ${d.correo}\n` +
-                               `Teléfono: ${d.telefono}\n\n` +
-                               `--- ESPECIFICACIONES POR PIEZA ---\n`;
+      const encabezadoRespaldo = [`Orden de ${d.cliente}`];
+      if (d.correo) encabezadoRespaldo.push(`Correo del que se envía: ${d.correo}`);
+      if (d.telefono) encabezadoRespaldo.push(`Teléfono: ${d.telefono}`);
+      let textoPlanoRespaldo = `${encabezadoRespaldo.join('\n')}\n\n--- ESPECIFICACIONES POR PIEZA ---\n`;
 
       let colorCanonicoCliente = obtenerColorCanonicoPorNombre(d.cliente);
 
       d.piezas.forEach(p => {
         let notasHTML = p.notas ? `<p style="margin: 2px 0; padding-left: 10px; color:#666666; font-size: medium;"><strong>Notas de la pieza:</strong> <em>${p.notas}</em></p>` : '';
         let lineaPostHTML = p.postImpresion ? `<p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Procesos post impresión:</strong> ${p.postImpresion}</p>` : '';
+        const detallePrecio = obtenerDetallePrecioPiezaDesdeDatos(p);
+        const lineaDisenoHTML = detallePrecio.precioDiseno > 0 ? `<p style="margin: 2px 0; padding-left: 10px; font-size: 10px; line-height: 1.1; color: #FFFFFF;"><strong>${detallePrecio.nombreDiseno || 'Nivel de diseño aplicado'}</strong></p>` : '';
+        const lineaPrecioHTML = `<p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Precio unitario por arte:</strong> ${formatearMontoMoneda(detallePrecio.precioReal)}</p>`;
 
         piezasHTML += `
           <div style="margin-top: 15px; padding: 12px; border-left: 3px solid ${colorCanonicoCliente}; background-color: #fafafa; font-size: medium;">
@@ -1555,8 +1741,9 @@
             <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Papel / Soporte:</strong> ${p.soporte}</p>
             <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Sistema de reproducción:</strong> ${p.reproduccion}</p>
             <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Modo de color:</strong> ${p.color}</p>
+            ${lineaDisenoHTML}
             ${lineaPostHTML}
-            <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Precio unitario por arte:</strong> ${p.precio}</p>
+            ${lineaPrecioHTML}
             <p style="margin: 2px 0; padding-left: 10px; font-size: medium;"><strong>Cantidad de artes:</strong> ${p.cantidad}</p>
             ${notasHTML}
           </div>
@@ -1569,8 +1756,9 @@
                               `  Papel / Soporte: ${p.soporte}\n` +
                               `  Sistema de reproducción: ${p.reproduccion}\n` +
                               `  Modo de color: ${p.color}\n` +
+                              (detallePrecio.precioDiseno > 0 ? `  Nivel de diseño: ${detallePrecio.nombreDiseno || p.disenoNombre || p.diseno}\n` : '') +
                               (p.postImpresion ? `  Procesos post impresión: ${p.postImpresion}\n` : '') +
-                              `  Precio unitario por arte: ${p.precio}\n` +
+                              `  Precio unitario por arte: ${formatearMontoMoneda(detallePrecio.precioReal)}\n` +
                               `  Cantidad de artes: ${p.cantidad}\n` +
                               (p.notas ? `  Notas de la pieza: ${p.notas}\n` : '');
       });
@@ -1585,10 +1773,8 @@
       const horaHTML = d.hora ? `<p style="margin: 4px 0; font-size: medium;"><strong>Hora de entrega:</strong> ${d.hora}</p>` : '';
       let obsGeneralesHTML = d.observacionesGenerales ? `<p style="margin: 4px 0; font-size: medium;"><strong>Observaciones generales:</strong> <em>${d.observacionesGenerales}</em></p>` : '';
 
-      textoPlanoRespaldo += (d.correo ? `Correo del que se envía: ${d.correo}\n` : '') +
-                            (d.telefono ? `Teléfono: ${d.telefono}\n` : '') +
-                            (d.asesor ? `Asesor: ${d.asesor}\n` : '') +
-                            `\n--- DATOS DE ENTREGA ---\n` +
+      textoPlanoRespaldo += (d.asesor ? `Asesor: ${d.asesor}\n` : '') +
+                `\n--- DATOS DE ENTREGA ---\n` +
                             `Monto total de orden: ${d.montoTotal}\n` +
                             (d.nit ? `Nit: ${d.nit}\n` : '') +
                             (d.ticket ? `Número de ticket: ${d.ticket}\n` : '') +
@@ -1636,6 +1822,9 @@
       d.piezas.forEach(p => {
         let notaLineaWA = p.notas ? `   • *Notas de la pieza:* _${p.notas}_\n` : '';
         let lineaPostWA = p.postImpresion ? `   • *Post impresión:* ${p.postImpresion}\n` : '';
+        const detallePrecio = obtenerDetallePrecioPiezaDesdeDatos(p);
+        const lineaDisenoWA = detallePrecio.precioDiseno > 0 ? `   • *Nivel de diseño:* ${detallePrecio.nombreDiseno || p.disenoNombre || p.diseno}\n` : '';
+        const lineaPrecioWA = `   • *Precio unitario por arte:* ${formatearMontoMoneda(detallePrecio.precioReal)}\n`;
 
         piezasWA += `\n*${p.num}. ${p.tipo}*\n` +
                     `   • *Dimensiones del arte:* ${p.dimensiones}\n` +
@@ -1644,23 +1833,24 @@
                     `   • *Soporte:* ${p.soporte}\n` +
                     `   • *Reproducción:* ${p.reproduccion}\n` +
                     `   • *Color:* ${p.color}\n` +
+                    lineaDisenoWA +
+                    lineaPrecioWA +
                     lineaPostWA +
-                    `   • *Precio por arte:* ${p.precio}\n` +
                     `   • *Cantidad de artes:* ${p.cantidad}\n` +
                     notaLineaWA;
       });
 
-      const correoWA = d.correo ? `*Correo del que se envía:* ${d.correo}\n` : '';
-      const telefonoWA = d.telefono ? `*Teléfono:* ${d.telefono}\n\n` : '';
-      const asesorWA = d.asesor ? `*Asesor:* ${d.asesor}\n\n` : '';
+      const encabezadoWA = [];
+      if (d.correo) encabezadoWA.push(`*Correo del que se envía:* ${d.correo}`);
+      if (d.telefono) encabezadoWA.push(`*Teléfono:* ${d.telefono}`);
+      if (d.asesor) encabezadoWA.push(`*Asesor:* ${d.asesor}`);
+      const bloqueEncabezadoWA = encabezadoWA.length ? `${encabezadoWA.join('\n')}\n\n` : '';
       const ticketWA = d.ticket ? `*Número de ticket:* ${d.ticket}\n` : '';
       const direccionWA = d.direccionEntrega ? `*Dirección de entrega:* ${d.direccionEntrega}\n` : '';
       let obsGeneralesWA = d.observacionesGenerales ? `\n*Observaciones generales:* ${d.observacionesGenerales}` : '';
 
       const textoWhatsApp = `> *_Orden de ${d.cliente}_*\n\n` +
-        `${correoWA}` +
-        `${telefonoWA}` +
-        `${asesorWA}` +
+        `${bloqueEncabezadoWA}` +
         `--- *ESPECIFICACIONES POR PIEZA* ---\n` +
         `${piezasWA}\n` +
         `*--- DATOS DE ENTREGA ---*\n\n` +
@@ -1723,6 +1913,11 @@
       d.piezas.forEach(p => {
         const postHTML = p.postImpresion ? `<p class="field"><strong>Procesos post impresión:</strong> ${p.postImpresion}</p>` : '';
         const notasHTML = p.notas ? `<p class="field"><strong>Notas de la pieza:</strong> ${p.notas}</p>` : '';
+        const detallePrecio = obtenerDetallePrecioPiezaDesdeDatos(p);
+        const lineaDiseno = detallePrecio.precioDiseno > 0 ? `<p class="field" style="font-size: 10px; line-height: 1.1;"><strong>${detallePrecio.nombreDiseno || 'Nivel de diseño aplicado'}</strong></p>` : '';
+        const precioHTML = detallePrecio.precioDiseno > 0
+          ? `<p class="field"><strong>Precio unitario por arte:</strong> <span style="color:#FF4FC3; font-weight: bold;">+ ${formatearMontoMoneda(detallePrecio.precioDiseno)}</span></p>`
+          : `<p class="field"><strong>Precio unitario por arte:</strong> ${formatearMontoMoneda(detallePrecio.precioOriginal)}</p>`;
         piezasHTML += `
           <div class="piece">
             <p class="piece-title">Pieza ${p.num}: ${p.tipo}</p>
@@ -1732,8 +1927,9 @@
             <p class="field"><strong>Papel / Soporte:</strong> ${p.soporte}</p>
             <p class="field"><strong>Sistema de reproducción:</strong> ${p.reproduccion}</p>
             <p class="field"><strong>Modo de color:</strong> ${p.color}</p>
+            ${lineaDiseno}
             ${postHTML}
-            <p class="field"><strong>Precio unitario por arte:</strong> ${p.precio}</p>
+            ${precioHTML}
             <p class="field"><strong>Cantidad de artes:</strong> ${p.cantidad}</p>
             ${notasHTML}
           </div>`;
@@ -1887,36 +2083,51 @@
         if (/Monto total/i.test(txt)) result.montoTotal = txt.replace(/Monto total(?: de orden)?:?/i, '').trim();
       });
 
-      // Detectar bloques de pieza: divs que contienen '— Pieza #'
-      // Buscar bloques que representen piezas (pueden usar 'Pieza', '— Pieza' o 'Pieza #')
-      const allElems = Array.from(tmp.querySelectorAll('*'));
-      allElems.forEach(el => {
-        const txt = (el.textContent || '').trim();
-        if (/\bPieza\b\s*#?\d*/i.test(txt) || /—\s*Pieza/i.test(txt)) {
-          const piece = { num: '', tipo: '', dimensiones: '', archivo: '', software: '', soporte: '', reproduccion: '', color: '', postImpresion: '', precio: '', cantidad: '', notas: '' };
-          const pTags = Array.from(el.querySelectorAll('p'));
-          pTags.forEach(p => {
-            const t = (p.textContent || '').trim();
-            if (t.match(/Pieza\s*#?\d+[:\-]?/i) || t.match(/—\s*Pieza\s*#?\d+[:\-]?/i)) {
-              const m = t.replace(/(?:—\s*)?Pieza\s*#?\d+[:\-]?/i, '').trim();
-              piece.tipo = m;
-              const numMatch = t.match(/#(\d+)/);
-              if (numMatch) piece.num = parseInt(numMatch[1], 10);
-            }
-            if (/Dimensiones del arte[:]?/i.test(t)) piece.dimensiones = t.replace(/Dimensiones del arte[:]?/i, '').trim();
-            if (/Nombre del archivo[:]?/i.test(t)) piece.archivo = t.replace(/Nombre del archivo[:]?/i, '').trim();
-            if (/Software utilizado[:]?/i.test(t)) piece.software = t.replace(/Software utilizado[:]?/i, '').trim();
-            if (/Papel\s*\/\s*Soporte[:]?/i.test(t)) piece.soporte = t.replace(/Papel\s*\/\s*Soporte[:]?/i, '').trim();
-            if (/Sistema de reproducción[:]?/i.test(t)) piece.reproduccion = t.replace(/Sistema de reproducción[:]?/i, '').trim();
-            if (/Modo de color[:]?/i.test(t)) piece.color = t.replace(/Modo de color[:]?/i, '').trim();
-            if (/Procesos post impresión[:]?/i.test(t)) piece.postImpresion = t.replace(/Procesos post impresión[:]?/i, '').trim();
-            if (/Precio unitario por arte[:]?/i.test(t)) piece.precio = t.replace(/Precio unitario por arte[:]?/i, '').trim();
-            if (/Cantidad de artes[:]?/i.test(t)) piece.cantidad = t.replace(/Cantidad de artes[:]?/i, '').trim();
-            if (/Notas de la pieza[:]?/i.test(t)) piece.notas = t.replace(/Notas de la pieza[:]?/i, '').trim();
-          });
-          if (piece.tipo || piece.dimensiones || piece.archivo) result.piezas.push(piece);
+      // Parsear piezas en orden por párrafos para evitar mezclar datos entre bloques.
+      let currentPiece = null;
+      const pushPieceIfValid = () => {
+        if (currentPiece && (currentPiece.tipo || currentPiece.dimensiones || currentPiece.archivo)) {
+          result.piezas.push(currentPiece);
         }
+      };
+
+      paragraphs.forEach(p => {
+        const t = (p.textContent || '').trim();
+        if (!t) return;
+
+        if (t.match(/Pieza\s*#?\d+[:\-]?/i) || t.match(/—\s*Pieza\s*#?\d+[:\-]?/i)) {
+          pushPieceIfValid();
+          currentPiece = { num: '', tipo: '', dimensiones: '', archivo: '', software: '', soporte: '', reproduccion: '', color: '', postImpresion: '', diseno: '', precio: '', cantidad: '', notas: '' };
+          const m = t.replace(/(?:—\s*)?Pieza\s*#?\d+[:\-]?/i, '').trim();
+          currentPiece.tipo = m;
+          const numMatch = t.match(/#(\d+)/);
+          if (numMatch) currentPiece.num = parseInt(numMatch[1], 10);
+          return;
+        }
+
+        if (!currentPiece) return;
+
+        if (/Dimensiones del arte[:]?/i.test(t)) currentPiece.dimensiones = t.replace(/Dimensiones del arte[:]?/i, '').trim();
+        if (/Nombre del archivo[:]?/i.test(t)) currentPiece.archivo = t.replace(/Nombre del archivo[:]?/i, '').trim();
+        if (/Software utilizado[:]?/i.test(t)) currentPiece.software = t.replace(/Software utilizado[:]?/i, '').trim();
+        if (/Papel\s*\/\s*Soporte[:]?/i.test(t)) currentPiece.soporte = t.replace(/Papel\s*\/\s*Soporte[:]?/i, '').trim();
+        if (/Sistema de reproducción[:]?/i.test(t)) currentPiece.reproduccion = t.replace(/Sistema de reproducción[:]?/i, '').trim();
+        if (/Modo de color[:]?/i.test(t)) currentPiece.color = t.replace(/Modo de color[:]?/i, '').trim();
+        if (/Nivel de diseño[:]?/i.test(t)) currentPiece.diseno = t.replace(/Nivel de diseño[:]?/i, '').trim();
+
+        const esLineaDisenoSinEtiqueta = !currentPiece.diseno &&
+          !/:/.test(t) &&
+          /^(No requiere diseño adicional|DISEÑO\b)/i.test(t) &&
+          !/(Dimensiones del arte|Nombre del archivo|Software utilizado|Papel\s*\/\s*Soporte|Sistema de reproducción|Modo de color|Procesos post impresión|Precio unitario por arte|Cantidad de artes|Notas de la pieza)/i.test(t);
+        if (esLineaDisenoSinEtiqueta) currentPiece.diseno = t.trim();
+
+        if (/Procesos post impresión[:]?/i.test(t)) currentPiece.postImpresion = t.replace(/Procesos post impresión[:]?/i, '').trim();
+        if (/Precio unitario por arte[:]?/i.test(t)) currentPiece.precio = t.replace(/Precio unitario por arte[:]?/i, '').trim();
+        if (/Cantidad de artes[:]?/i.test(t)) currentPiece.cantidad = t.replace(/Cantidad de artes[:]?/i, '').trim();
+        if (/Notas de la pieza[:]?/i.test(t)) currentPiece.notas = t.replace(/Notas de la pieza[:]?/i, '').trim();
       });
+
+      pushPieceIfValid();
 
       // Extraer dimensiones desde el texto plano por si están fragmentadas en nodos
       const textAll = (tmp.textContent || '').replace(/\u00A0/g, ' ').replace(/[\u2012\u2013\u2014\u2015]/g, '-');
@@ -1957,7 +2168,7 @@
           // nueva pieza (línea tipo '*1. Tipo')
           if (currentPiece) result.piezas.push(currentPiece);
           const title = clean.replace(/^[^\w]*(\d+\.)?\s*/, '').replace(/\*/g, '').trim();
-          currentPiece = { num: result.piezas.length + 1, tipo: title, dimensiones: '', archivo: '', software: '', soporte: '', reproduccion: '', color: '', postImpresion: '', precio: '', cantidad: '', notas: '' };
+          currentPiece = { num: result.piezas.length + 1, tipo: title, dimensiones: '', archivo: '', software: '', soporte: '', reproduccion: '', color: '', postImpresion: '', diseno: '', precio: '', cantidad: '', notas: '' };
           return;
         }
 
@@ -1995,6 +2206,13 @@
         if (mr) currentPiece.reproduccion = mr[1].trim();
         const mco = clean.match(/Color[:\*]*\s*(.+)/i);
         if (mco) currentPiece.color = mco[1].trim();
+        const mdis = clean.match(/Nivel de diseño[:\*]*\s*(.+)/i);
+        if (mdis) currentPiece.diseno = mdis[1].trim();
+        const esDisenoSinEtiqueta = !currentPiece.diseno &&
+          !/:/.test(clean) &&
+          /^(No requiere diseño adicional|DISEÑO\b)/i.test(clean) &&
+          !/(Dimensiones del arte|Nombre del archivo|Software|Soporte|Reproducción|Color|Post impresión|Precio|Cantidad|Notas de la pieza|Correo del que se envía|Teléfono|Asesor|Número de ticket|Dirección de entrega|Nit|Fecha de entrega|Hora de entrega|Monto total)/i.test(clean);
+        if (esDisenoSinEtiqueta) currentPiece.diseno = clean.trim();
         const mpost = clean.match(/Post impresión[:\*]*\s*(.+)/i);
         if (mpost) currentPiece.postImpresion = mpost[1].trim();
         const mprecio = clean.match(/Precio(?: por arte| unitario por arte)?[:\*]*\s*(.+)/i);
@@ -2087,14 +2305,44 @@
           if (softwareVal) uiBlock.querySelector('.p-software').value = softwareVal;
           const soporteVal = sanitizeParsedString(p.soporte);
           if (soporteVal) uiBlock.querySelector('.p-soporte').value = soporteVal;
+          let disenoMontoNum = 0;
+          const selectDiseno = uiBlock.querySelector('.p-diseno');
+          const disenoVal = sanitizeParsedString(p.diseno);
+          if (disenoVal && selectDiseno) {
+            const targetOption = Array.from(selectDiseno?.options || []).find(opt => {
+              const nombreOpt = (opt.dataset?.nombre || opt.textContent || '').trim().toLowerCase();
+              const textoOpt = (opt.textContent || '').trim().toLowerCase();
+              const valorOpt = String(opt.value).trim();
+              const buscado = disenoVal.toLowerCase();
+              return nombreOpt === buscado || textoOpt === buscado || valorOpt === disenoVal.trim() ||
+                     nombreOpt.includes(buscado) || buscado.includes(nombreOpt) ||
+                     textoOpt.includes(buscado) || buscado.includes(textoOpt);
+            });
+            if (targetOption) {
+              selectDiseno.value = targetOption.value;
+              disenoMontoNum = parsearMontoMoneda(targetOption.value);
+            } else {
+              const numericMatch = disenoVal.match(/([0-9]+(?:\.[0-9]+)?)/);
+              if (numericMatch) {
+                selectDiseno.value = numericMatch[1];
+                disenoMontoNum = parsearMontoMoneda(numericMatch[1]);
+              }
+            }
+          }
+          if (selectDiseno) {
+            disenoMontoNum = disenoMontoNum || parsearMontoMoneda(selectDiseno.value || '0');
+            if (typeof actualizarDisplayNivelDiseno === 'function') actualizarDisplayNivelDiseno(selectDiseno);
+          }
           const postVal = sanitizeParsedString(p.postImpresion);
           if (postVal) uiBlock.querySelector('.p-post-redaccion').value = postVal;
           if (p.precio) {
               const precioInput = uiBlock.querySelector('.p-precio');
-              // normalizar precio a formato 'Q X.XX'
-              const num = String(p.precio).replace(/[^0-9.]/g, '');
-              if (num) {
-                precioInput.value = `Q ${parseFloat(num).toFixed(2)}`;
+              // El texto pegado trae el precio final unitario, por eso restamos el diseño seleccionado.
+              const precioMatch = String(p.precio).match(/(?:Q\s*)?([0-9]+(?:\.[0-9]+)?)/i);
+              if (precioMatch) {
+                const precioFinalNum = parseFloat(precioMatch[1]);
+                const precioOriginalNum = Math.max(0, precioFinalNum - disenoMontoNum);
+                precioInput.value = `Q ${precioOriginalNum.toFixed(2)}`;
                 if (typeof aplicarMascaraPrecio === 'function') aplicarMascaraPrecio(precioInput);
               } else {
                 precioInput.value = p.precio;
@@ -2114,10 +2362,12 @@
                 if (target) target.checked = true;
               }
             }
+          actualizarResumenPrecioPieza(uiBlock);
         });
         reordenarNumeracionVisual();
         // asegurar que los precios estén correctamente formateados y recalcular totales
         document.querySelectorAll('.p-precio').forEach(inp => { if (inp && typeof aplicarMascaraPrecio === 'function') aplicarMascaraPrecio(inp); });
+        actualizarResumenesPrecioPiezas();
         calcularMontoTotalGlobal();
       }
 
